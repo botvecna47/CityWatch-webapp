@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CityWatch – Next-Gen Civic Reporting</title>
+    <meta name="description" content="CityWatch is a modern, unified civic reporting platform for your city." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <!-- Navbar -->
+    <header class="navbar" role="banner">
+      <nav class="nav" aria-label="Primary">
+        <div class="nav__left">
+          <a href="#" class="brand" aria-label="CityWatch Home">CityWatch</a>
+          <button class="nav__toggle" id="navToggle" aria-expanded="false" aria-controls="navMenu" aria-label="Open navigation menu">
+            <span class="nav__bar"></span>
+            <span class="nav__bar"></span>
+            <span class="nav__bar"></span>
+          </button>
+        </div>
+        <ul class="nav__links" id="navMenu" role="menubar">
+          <li role="none"><a role="menuitem" href="#home" class="nav-link is-active" data-section-target="home">Home</a></li>
+          <li role="none"><a role="menuitem" href="#features" class="nav-link" data-section-target="features">Features</a></li>
+          <li role="none"><a role="menuitem" href="#how" class="nav-link" data-section-target="how">How It Works</a></li>
+          <li role="none"><a role="menuitem" href="#report" class="nav-link" data-section-target="report">Report Issue</a></li>
+          <li role="none"><a role="menuitem" href="#reported" class="nav-link" data-section-target="reported">Reported Issues</a></li>
+          <li role="none"><a role="menuitem" href="#dashboard" class="nav-link" data-section-target="dashboard">Dashboard</a></li>
+          <li role="none"><a role="menuitem" href="#admin" class="nav-link" data-section-target="admin" id="adminNav" hidden>Admin</a></li>
+        </ul>
+        <div class="nav__right">
+          <button class="btn btn--primary" id="loginBtn" aria-haspopup="dialog" aria-controls="loginModal">Login / Sign Up</button>
+          <button class="btn" id="navLogoutBtn" aria-label="Log out" style="display:none">Log out</button>
+          <button class="btn" id="themeToggleBtn" aria-pressed="false" aria-label="Toggle theme">Toggle Theme</button>
+        </div>
+      </nav>
+    </header>
+
+    <main id="main" tabindex="-1">
+      <!-- Hero -->
+      <section id="home" class="section hero" aria-labelledby="hero-title">
+        <div class="container hero__grid">
+          <div class="hero__content">
+            <h1 id="hero-title">Next-Gen Civic Reporting</h1>
+            <p class="hero__subtitle">Report issues, track progress, and help your city respond faster — all in one place.</p>
+            <div class="hero__cta">
+              <a class="btn btn--accent js-show-section" href="#report" data-section-target="report">Report an Issue</a>
+              <a class="btn js-show-section" href="#reported" data-section-target="reported">See Reported Issues</a>
+            </div>
+          </div>
+          <div class="hero__art" aria-hidden="true">
+            <svg class="city-art" viewBox="0 0 300 200" role="img" aria-label="City skyline illustration">
+              <defs>
+                <linearGradient id="sky" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stop-color="#e9f0ff" />
+                  <stop offset="100%" stop-color="#f6f9ff" />
+                </linearGradient>
+              </defs>
+              <rect width="300" height="200" fill="url(#sky)" />
+              <rect x="20" y="80" width="40" height="100" fill="#cddcff" />
+              <rect x="70" y="60" width="50" height="120" fill="#b8caff" />
+              <rect x="130" y="90" width="35" height="90" fill="#d7e2ff" />
+              <rect x="170" y="50" width="60" height="130" fill="#c0d0ff" />
+              <rect x="235" y="100" width="45" height="80" fill="#dfe7ff" />
+              <circle cx="250" cy="40" r="12" fill="#ffbb33" />
+            </svg>
+          </div>
+        </div>
+        <div class="container" style="margin-top:24px">
+          <div class="card" style="padding:18px">
+            <h2 style="margin:0 0 8px">Why CityWatch?</h2>
+            <p class="muted" style="margin:0 0 12px">Built with citizens and administrators in mind, CityWatch brings transparency and speed to civic issue resolution.</p>
+            <ul style="margin:0; padding-left:18px; columns:2; gap:24px">
+              <li>Unified platform for all civic categories</li>
+              <li>Privacy-first reporting with minimal friction</li>
+              <li>Live status and push notifications</li>
+              <li>AI-assisted triage and prioritization</li>
+              <li>Powerful admin tools and analytics</li>
+              <li>Accessible, responsive, and keyboard-friendly</li>
+            </ul>
+          </div>
+          <div class="stats" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px">
+            <div class="card" style="text-align:center"><div style="font-weight:800;font-size:1.4rem;color:#3366ff">10k+</div><div class="muted">Issues Resolved</div></div>
+            <div class="card" style="text-align:center"><div style="font-weight:800;font-size:1.4rem;color:#3366ff">50+</div><div class="muted">Wards Covered</div></div>
+            <div class="card" style="text-align:center"><div style="font-weight:800;font-size:1.4rem;color:#3366ff">4.8★</div><div class="muted">Citizen Satisfaction</div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Features -->
+      <section id="features" class="section features" aria-labelledby="features-title">
+        <div class="container">
+          <h2 id="features-title">Powerful features built for your city</h2>
+          <div class="features__grid" role="list">
+            <article class="card feature" role="listitem">
+              <div class="feature__icon" aria-hidden="true">📌</div>
+              <h3 class="feature__title">Unified Reporting</h3>
+              <p class="feature__text">Submit issues for garbage, water, roads, power, and more in one place.</p>
+            </article>
+            <article class="card feature" role="listitem">
+              <div class="feature__icon" aria-hidden="true">🔔</div>
+              <h3 class="feature__title">Real-time Alerts</h3>
+              <p class="feature__text">Get instant updates as your complaint progresses through departments.</p>
+            </article>
+            <article class="card feature" role="listitem">
+              <div class="feature__icon" aria-hidden="true">🤖</div>
+              <h3 class="feature__title">AI Prioritization</h3>
+              <p class="feature__text">Smart sorting helps teams focus on what matters most first.</p>
+            </article>
+            <article class="card feature" role="listitem">
+              <div class="feature__icon" aria-hidden="true">⭐</div>
+              <h3 class="feature__title">Feedback & Ratings</h3>
+              <p class="feature__text">Share feedback to improve services and recognize great responses.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- How It Works -->
+      <section id="how" class="section how" aria-labelledby="how-title">
+        <div class="container">
+          <h2 id="how-title">How It Works</h2>
+          <ol class="how__steps" aria-label="Four steps to use CityWatch">
+            <li class="step">
+              <span class="step__num" aria-hidden="true">1</span>
+              <h3 class="step__title">Login</h3>
+              <p class="step__text">Create your profile with your city to personalize updates and filter relevant issues.</p>
+            </li>
+            <li class="step">
+              <span class="step__num" aria-hidden="true">2</span>
+              <h3 class="step__title">Report</h3>
+              <p class="step__text">Describe the issue, add a photo or landmark, and pick a category like Roads or Water.</p>
+            </li>
+            <li class="step">
+              <span class="step__num" aria-hidden="true">3</span>
+              <h3 class="step__title">Track</h3>
+              <p class="step__text">Follow real-time updates as departments triage, assign, and take action.</p>
+            </li>
+            <li class="step">
+              <span class="step__num" aria-hidden="true">4</span>
+              <h3 class="step__title">Resolve</h3>
+              <p class="step__text">See outcomes, rate the response, and provide feedback to improve services.</p>
+            </li>
+          </ol>
+          <div class="card" style="margin-top:16px">
+            <h3 style="margin-top:0">Detailed Workflow</h3>
+            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">
+              <div>
+                <strong>Submission</strong>
+                <p class="muted">Smart hints guide you to write clear, actionable reports. Attachments optional.</p>
+              </div>
+              <div>
+                <strong>Classification</strong>
+                <p class="muted">AI tags category and urgency; duplicates auto-merged to avoid clutter.</p>
+              </div>
+              <div>
+                <strong>Assignment</strong>
+                <p class="muted">Routed to the right department with SLA targets and escalation paths.</p>
+              </div>
+              <div>
+                <strong>Resolution</strong>
+                <p class="muted">Completion proof added; citizens confirm and rate to close the loop.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Visible Report Issue Section -->
+      <section id="report" class="section report" aria-labelledby="report-title">
+        <div class="container">
+          <h2 id="report-title">Report an Issue</h2>
+          <p class="muted">You can submit an issue here. If you are not logged in, you’ll be prompted to continue.</p>
+          <form id="inlinePostForm" class="card report__form" novalidate>
+            <div class="report__grid">
+              <label class="field field--full">
+                <span class="field__label">Describe the issue</span>
+                <textarea id="inlineDescription" rows="4" placeholder="Describe the problem clearly..." required minlength="10"></textarea>
+                <span class="field__error" id="inlineDescriptionError" role="alert"></span>
+              </label>
+              <label class="field">
+                <span class="field__label">Image URL (optional)</span>
+                <input id="inlineImageUrl" type="url" placeholder="https://..." />
+              </label>
+              <label class="field">
+                <span class="field__label">Social Platform (optional)</span>
+                <input id="inlineSocial" type="text" placeholder="e.g., Twitter, Instagram" />
+              </label>
+            </div>
+            <div class="report__actions">
+              <button type="submit" class="btn btn--accent">Continue</button>
+            </div>
+            <div id="inlineCategoryStep" style="display:none; margin-top:12px">
+              <label class="field" style="max-width:320px">
+                <span class="field__label">Select category</span>
+                <select id="inlineCategory">
+                  <option value="" disabled selected>Select category</option>
+                  <option>Garbage</option>
+                  <option>Water</option>
+                  <option>Roads</option>
+                  <option>Power</option>
+                </select>
+                <span class="field__error" id="inlineCategoryError" role="alert"></span>
+              </label>
+              <div class="report__actions">
+                <button type="button" class="btn btn--accent" id="inlineCategoryConfirm">Submit Issue</button>
+                <button type="button" class="btn" id="inlineCategoryBack">Back</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- Public Reported Issues -->
+      <section id="reported" class="section reported" aria-labelledby="reported-title">
+        <div class="container">
+          <h2 id="reported-title">Reported Issues</h2>
+          <div class="filters" role="tablist" aria-label="Public complaint categories">
+            <button class="chip is-active" role="tab" aria-selected="true" data-category="All" data-scope="public">All</button>
+            <button class="chip" role="tab" aria-selected="false" data-category="Garbage" data-scope="public">Garbage</button>
+            <button class="chip" role="tab" aria-selected="false" data-category="Water" data-scope="public">Water</button>
+            <button class="chip" role="tab" aria-selected="false" data-category="Roads" data-scope="public">Roads</button>
+            <button class="chip" role="tab" aria-selected="false" data-category="Power" data-scope="public">Power</button>
+          </div>
+          <section class="feed" aria-live="polite" aria-busy="false">
+            <div id="publicFeedList" class="feed__list" role="list"></div>
+          </section>
+        </div>
+      </section>
+
+      <!-- Dashboard (initially hidden) -->
+      <section id="dashboard" class="section dashboard" aria-labelledby="dashboard-title" hidden>
+        <div class="container dashboard__grid">
+          <header class="dashboard__header">
+            <h2 id="dashboard-title">Your Dashboard</h2>
+            <div class="dashboard__actions">
+              <button class="btn btn--accent" id="openReportBtn2" aria-haspopup="dialog" aria-controls="postModal">Post Complaint</button>
+            </div>
+          </header>
+
+          <aside class="card guide" aria-labelledby="guide-title">
+            <h3 id="guide-title">Welcome to CityWatch</h3>
+            <p>Use the category filters to explore issues. Click a complaint card to view details, then post your own when ready.</p>
+            <ul class="guide__list">
+              <li>Press the Post button to submit a complaint.</li>
+              <li>Filter by Garbage, Water, Roads, or Power.</li>
+              <li>Watch status change from Pending to In Progress.</li>
+            </ul>
+          </aside>
+
+          <div class="filters" role="tablist" aria-label="Complaint categories">
+            <button class="chip is-active" role="tab" aria-selected="true" data-category="All">All</button>
+            <button class="chip" role="tab" aria-selected="false" data-category="Garbage">Garbage</button>
+            <button class="chip" role="tab" aria-selected="false" data-category="Water">Water</button>
+            <button class="chip" role="tab" aria-selected="false" data-category="Roads">Roads</button>
+            <button class="chip" role="tab" aria-selected="false" data-category="Power">Power</button>
+          </div>
+
+          <section class="feed" aria-live="polite" aria-busy="false">
+            <div id="feedList" class="feed__list" role="list"></div>
+          </section>
+
+          <aside class="card details" aria-labelledby="details-title">
+            <h3 id="details-title">Complaint Details</h3>
+            <div id="detailsBody" class="details__body" tabindex="0">
+              <p>Select a complaint to view details.</p>
+            </div>
+          </aside>
+        </div>
+      </section>
+    </main>
+
+    <!-- Login / Sign Up Modal -->
+    <div class="modal" id="loginModal" role="dialog" aria-modal="true" aria-labelledby="loginTitle" aria-hidden="true">
+      <div class="modal__backdrop" data-close="loginModal"></div>
+      <div class="modal__dialog" role="document">
+        <header class="modal__header">
+          <h2 id="loginTitle">Login / Sign Up</h2>
+          <button class="icon-btn" aria-label="Close" data-close="loginModal">✕</button>
+        </header>
+        <div class="modal__content">
+          <form id="loginForm" novalidate>
+            <label class="field">
+              <span class="field__label">Username</span>
+              <input id="usernameInput" name="username" type="text" required minlength="2" autocomplete="username" />
+              <span class="field__error" id="usernameError" role="alert"></span>
+            </label>
+            <label class="field">
+              <span class="field__label">Password (required for admin)</span>
+              <input id="passwordInput" name="password" type="password" autocomplete="current-password" placeholder="Required only if logging in as admin" />
+              <span class="field__error" id="passwordError" role="alert"></span>
+            </label>
+            <label class="field">
+              <span class="field__label">City</span>
+              <select id="citySelect" name="city" required>
+                <option value="" disabled selected>Select your city</option>
+                <option>Pune</option>
+                <option>Mumbai</option>
+                <option>Navi Mumbai</option>
+                <option>Thane</option>
+                <option>Pimpri-Chinchwad</option>
+              </select>
+              <span class="field__error" id="cityError" role="alert"></span>
+            </label>
+            <div class="modal__actions" style="justify-content: flex-start">
+              <button type="button" class="btn" id="demoUserBtn">Demo User</button>
+              <button type="button" class="btn" id="demoAdminBtn">Demo Admin</button>
+            </div>
+            <div class="modal__actions">
+              <button type="submit" class="btn btn--primary">Continue</button>
+              <button type="button" class="btn" data-close="loginModal">Cancel</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Post Complaint Modal -->
+    <div class="modal" id="postModal" role="dialog" aria-modal="true" aria-labelledby="postTitle" aria-hidden="true">
+      <div class="modal__backdrop" data-close="postModal"></div>
+      <div class="modal__dialog" role="document">
+        <header class="modal__header">
+          <h2 id="postTitle">Post a Complaint</h2>
+          <button class="icon-btn" aria-label="Close" data-close="postModal">✕</button>
+        </header>
+        <div class="modal__content">
+          <form id="postForm" novalidate>
+            <label class="field">
+              <span class="field__label">Category</span>
+              <select id="postCategory" required>
+                <option value="" disabled selected>Select category</option>
+                <option>Garbage</option>
+                <option>Water</option>
+                <option>Roads</option>
+                <option>Power</option>
+              </select>
+              <span class="field__error" id="postCategoryError" role="alert"></span>
+            </label>
+            <label class="field">
+              <span class="field__label">Description</span>
+              <textarea id="postDescription" rows="4" placeholder="Describe the problem clearly..." required minlength="10"></textarea>
+              <span class="field__error" id="postDescriptionError" role="alert"></span>
+            </label>
+            <label class="field">
+              <span class="field__label">Image URL (optional)</span>
+              <input id="postImageUrl" type="url" placeholder="https://..." />
+            </label>
+            <label class="field">
+              <span class="field__label">Social Platform (optional)</span>
+              <input id="postSocial" type="text" placeholder="e.g., Twitter, Instagram" />
+            </label>
+            <div class="modal__actions">
+              <button type="submit" class="btn btn--accent">Submit</button>
+              <button type="button" class="btn" data-close="postModal">Cancel</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notifications -->
+    <div id="toasts" class="toasts" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- Admin Panel -->
+    <section id="admin" class="section admin" aria-labelledby="admin-title" hidden>
+      <div class="container">
+        <h2 id="admin-title">Admin Panel</h2>
+        <div class="card" id="adminPanel" style="margin-bottom:12px">
+          <p class="muted">Select a complaint to manage its status, assign an authority, or remove it.</p>
+          <div class="admin__controls">
+            <label class="field">
+              <span class="field__label">Complaint</span>
+              <select id="adminComplaintSelect"></select>
+            </label>
+            <label class="field">
+              <span class="field__label">Assign Authority</span>
+              <select id="adminAuthoritySelect"></select>
+            </label>
+            <div class="admin__actions">
+              <button class="btn" id="adminAssignAuthority">Assign</button>
+              <button class="btn" id="adminMarkProgress">Mark In Progress</button>
+              <button class="btn" id="adminMarkResolved">Mark Resolved</button>
+              <button class="btn" id="adminDelete">Delete</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:12px">
+          <h3 style="margin-top:0">Register Authority</h3>
+          <div class="admin__controls">
+            <label class="field">
+              <span class="field__label">Authority Name</span>
+              <input id="authorityNameInput" type="text" placeholder="e.g., Water Authority" />
+            </label>
+            <label class="field">
+              <span class="field__label">Department</span>
+              <input id="authorityDeptInput" type="text" placeholder="e.g., Utilities" />
+            </label>
+            <div class="admin__actions">
+              <button class="btn btn--primary" id="addAuthorityBtn">Add Authority</button>
+            </div>
+            <div id="authorityList" class="muted"></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:12px">
+          <h3 style="margin-top:0">Admin Alerts</h3>
+          <div class="admin__controls">
+            <label class="field">
+              <span class="field__label">New Alert</span>
+              <input id="adminAlertInput" type="text" placeholder="e.g., Water shutoff in Sector 5 at 5 PM" />
+            </label>
+            <div class="admin__actions">
+              <button class="btn" id="addAdminAlertBtn">Post Alert</button>
+            </div>
+            <ul id="adminAlertsList" style="margin:0; padding-left:18px"></ul>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 style="margin-top:0">Analytics</h3>
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">
+            <canvas id="chartStatus" height="160"></canvas>
+            <canvas id="chartCategory" height="160"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <script src="script.js" defer></script>
+  </body>
+  </html>
+
+
