@@ -2,9 +2,9 @@
   'use strict';
 
   // Data simulation
-  /** @type {Record<string, {username:string, city:string}>} */
+  /** @type {Record<string, {username:string, city:string, role:'citizen'|'authority'|'admin', id:string, authorityId?:string, password?:string}>} */
   const users = {};
-  /** @type {Array<{id:string, title:string, description:string, imageUrl?:string, social?:string, category:'Garbage'|'Water'|'Roads'|'Power', status:'Pending'|'In Progress'|'Resolved', postedBy:string, createdAt:number, authorityId?:string}>} */
+  /** @type {Array<{id:string, title:string, description:string, imageUrl?:string, social?:string, category:'Garbage'|'Water'|'Roads'|'Power', status:'Pending'|'In Progress'|'Resolved', postedBy:string, createdAt:number, authorityId?:string, updates?:Array<{message:string, timestamp:number, author:string}>}>} */
   const complaints = [
     { id: uid(), title: 'Overflowing bins on 5th Ave', description: 'Public trash bins are overflowing and attracting pests near the park entrance.', category: 'Garbage', status: 'Pending', postedBy: 'alex', createdAt: Date.now() - 1000 * 60 * 60 },
     { id: uid(), title: 'Broken water main', description: 'Water leak at Maple St & 3rd. Street is slippery and unsafe.', category: 'Water', status: 'In Progress', postedBy: 'sam', createdAt: Date.now() - 1000 * 60 * 90 },
@@ -15,19 +15,25 @@
   // Ratings: complaintId -> { total:number, count:number, userRatings: Record<string, number> }
   const ratingsByComplaintId = {};
 
-  let currentUser = null; // { username, city }
+  let currentUser = null; // { username, city, role, id, authorityId? }
   let theme = 'light';
   let currentCategory = 'All';
   let currentPublicCategory = 'All';
+  let currentAuthorityCategory = 'All';
+  
   // Authorities (admin-managed)
-  /** @type {Array<{id:string, name:string, department:string}>} */
+  /** @type {Array<{id:string, name:string, department:string, username?:string}>} */
   const authorities = [
-    { id: uid(), name: 'Garbage Dept', department: 'Sanitation' },
-    { id: uid(), name: 'Water Authority', department: 'Utilities' },
-    { id: uid(), name: 'Roads Authority', department: 'Public Works' },
+    { id: uid(), name: 'Garbage Dept', department: 'Sanitation', username: 'garbage_dept' },
+    { id: uid(), name: 'Water Authority', department: 'Utilities', username: 'water_dept' },
+    { id: uid(), name: 'Roads Authority', department: 'Public Works', username: 'roads_dept' },
   ];
+  
   // Alerts (admin-managed)
   const adminAlerts = [];
+  
+  // User activity logs
+  const userActivityLogs = [];
 
   // Elements
   const els = {
@@ -87,8 +93,6 @@
     navLinks: Array.from(document.querySelectorAll('.nav-link')),
     sections: {
       home: document.getElementById('home'),
-      features: document.getElementById('features'),
-      how: document.getElementById('how'),
       report: document.getElementById('report'),
       reported: document.getElementById('reported'),
       dashboard: document.getElementById('dashboard'),
@@ -96,6 +100,17 @@
     },
     postImageUrl: document.getElementById('postImageUrl'),
     postSocial: document.getElementById('postSocial'),
+    // New admin registration inputs
+    authorityUsernameInput: document.getElementById('authorityUsernameInput'),
+    authorityPasswordInput: document.getElementById('authorityPasswordInput'),
+    regCitizenUsername: document.getElementById('regCitizenUsername'),
+    regCitizenPassword: document.getElementById('regCitizenPassword'),
+    regCitizenCity: document.getElementById('regCitizenCity'),
+    addCitizenBtn: document.getElementById('addCitizenBtn'),
+    regAuthorityUsername: document.getElementById('regAuthorityUsername'),
+    regAuthorityPassword: document.getElementById('regAuthorityPassword'),
+    regAuthorityLink: document.getElementById('regAuthorityLink'),
+    addAuthorityUserBtn: document.getElementById('addAuthorityUserBtn'),
   };
 
   // Navigation toggle for small screens
@@ -168,6 +183,10 @@
     currentUser = null;
     notify('You have been logged out.');
     updateAuthUI();
+    // Return to Home to avoid hidden dashboard leaving a blank screen
+    showSection('home');
+    renderPublicFeed();
+    renderFeed();
   });
 
   // Open report modal buttons
@@ -534,6 +553,7 @@
         ratingsByComplaintId,
         authorities,
         adminAlerts,
+        userActivityLogs,
         theme,
       };
       localStorage.setItem('citywatch_state', JSON.stringify(state));
@@ -559,6 +579,9 @@
         }
         if (Array.isArray(state.adminAlerts)) {
           adminAlerts.splice(0, adminAlerts.length, ...state.adminAlerts);
+        }
+        if (Array.isArray(state.userActivityLogs)) {
+          userActivityLogs.splice(0, userActivityLogs.length, ...state.userActivityLogs);
         }
         theme = state.theme || 'light';
       }
@@ -592,6 +615,8 @@
       els.navLogoutBtn.style.display = 'none';
       els.adminNav.hidden = true;
       els.adminSection.hidden = true;
+      // Ensure public sections remain visible
+      showSection('home');
     }
     saveState();
   }
@@ -649,6 +674,15 @@
       opt.value = a.id; opt.textContent = `${a.name}`;
       els.adminAuthoritySelect.appendChild(opt);
     }
+    // Also populate link dropdown in user registration
+    if (els.regAuthorityLink) {
+      els.regAuthorityLink.innerHTML = '';
+      for (const a of authorities) {
+        const opt = document.createElement('option');
+        opt.value = a.id; opt.textContent = `${a.name}`;
+        els.regAuthorityLink.appendChild(opt);
+      }
+    }
   }
 
   function renderAuthorityList() {
@@ -656,16 +690,57 @@
     els.authorityList.innerHTML = authorities.length ? `Registered: ${authorities.map(a => `<strong>${a.name}</strong> (${a.department})`).join(', ')}` : 'No authorities yet.';
   }
 
+  // Admin: register authority org + optional authority login
   els.addAuthorityBtn?.addEventListener('click', () => {
-    const name = (els.authorityNameInput.value || '').trim();
-    const dept = (els.authorityDeptInput.value || '').trim();
+    const name = (els.authorityNameInput?.value || '').trim();
+    const dept = (els.authorityDeptInput?.value || '').trim();
+    const uname = (els.authorityUsernameInput?.value || '').trim();
+    const pwd = (els.authorityPasswordInput?.value || '').trim();
     if (!name || !dept) { notify('Enter authority name and department.'); return; }
-    authorities.push({ id: uid(), name, department: dept });
-    els.authorityNameInput.value = '';
-    els.authorityDeptInput.value = '';
+    const newAuth = { id: uid(), name, department: dept, username: uname || undefined };
+    authorities.push(newAuth);
+    if (uname) {
+      users[uname] = { username: uname, city: 'Mumbai', role: 'authority', id: uid(), authorityId: newAuth.id, password: pwd || 'ChangeMe@123' };
+    }
+    if (els.authorityNameInput) els.authorityNameInput.value = '';
+    if (els.authorityDeptInput) els.authorityDeptInput.value = '';
+    if (els.authorityUsernameInput) els.authorityUsernameInput.value = '';
+    if (els.authorityPasswordInput) els.authorityPasswordInput.value = '';
     renderAuthorityOptions();
     renderAuthorityList();
+    renderUserManagement?.();
     notify('Authority registered.');
+    saveState();
+  });
+
+  // Admin: quick citizen registration
+  els.addCitizenBtn?.addEventListener('click', () => {
+    const uname = (els.regCitizenUsername?.value || '').trim().toLowerCase();
+    const pwd = (els.regCitizenPassword?.value || '').trim();
+    const city = els.regCitizenCity?.value || 'Pune';
+    if (!uname) { notify('Enter a citizen username.'); return; }
+    if (users[uname]) { notify('Username already exists.'); return; }
+    users[uname] = { username: uname, city, role: 'citizen', id: uid(), password: pwd || undefined };
+    els.regCitizenUsername.value = '';
+    els.regCitizenPassword.value = '';
+    renderUserManagement?.();
+    notify('Citizen registered.');
+    saveState();
+  });
+
+  // Admin: quick authority user registration
+  els.addAuthorityUserBtn?.addEventListener('click', () => {
+    const uname = (els.regAuthorityUsername?.value || '').trim().toLowerCase();
+    const pwd = (els.regAuthorityPassword?.value || '').trim();
+    const authId = els.regAuthorityLink?.value;
+    if (!uname || !pwd || !authId) { notify('Enter username, password and select authority.'); return; }
+    if (users[uname]) { notify('Username already exists.'); return; }
+    users[uname] = { username: uname, city: 'Mumbai', role: 'authority', id: uid(), authorityId: authId, password: pwd };
+    els.regAuthorityUsername.value = '';
+    els.regAuthorityPassword.value = '';
+    renderUserManagement?.();
+    notify('Authority user registered.');
+    saveState();
   });
 
   els.adminAssignAuthority?.addEventListener('click', () => {
@@ -811,5 +886,36 @@
     return Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-3);
   }
 })();
+
+// Admin tabs switching
+(function setupAdminTabs(){
+  const tabsContainer = document.querySelector('#admin .user-tabs');
+  if (!tabsContainer) return;
+  tabsContainer.addEventListener('click', (e) => {
+    const btn = e.target.closest('.tab-btn');
+    if (!btn) return;
+    const tab = btn.getAttribute('data-tab');
+    if (!tab) return;
+    tabsContainer.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const content = document.getElementById('userManagementContent');
+    if (!content) return;
+    content.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    const activePane = document.getElementById(tab + 'Tab');
+    if (activePane) activePane.classList.add('active');
+  });
+})();
+
+// Ensure admin lists and selectors populate when admin section becomes visible
+const adminObserver = new MutationObserver(() => {
+  if (els.adminSection && !els.adminSection.hidden && currentUser && (currentUser.role === 'admin' || currentUser.username === 'admin')) {
+    renderAuthorityOptions();
+    renderAuthorityList();
+    renderUserManagement?.();
+  }
+});
+if (els.adminSection) {
+  adminObserver.observe(els.adminSection, { attributes: true, attributeFilter: ['hidden'] });
+}
 
 

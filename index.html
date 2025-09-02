@@ -26,11 +26,10 @@
         </div>
         <ul class="nav__links" id="navMenu" role="menubar">
           <li role="none"><a role="menuitem" href="#home" class="nav-link is-active" data-section-target="home">Home</a></li>
-          <li role="none"><a role="menuitem" href="#features" class="nav-link" data-section-target="features">Features</a></li>
-          <li role="none"><a role="menuitem" href="#how" class="nav-link" data-section-target="how">How It Works</a></li>
           <li role="none"><a role="menuitem" href="#report" class="nav-link" data-section-target="report">Report Issue</a></li>
           <li role="none"><a role="menuitem" href="#reported" class="nav-link" data-section-target="reported">Reported Issues</a></li>
           <li role="none"><a role="menuitem" href="#dashboard" class="nav-link" data-section-target="dashboard">Dashboard</a></li>
+          <li role="none"><a role="menuitem" href="#authority" class="nav-link" data-section-target="authority" id="authorityNav" hidden>Authority Panel</a></li>
           <li role="none"><a role="menuitem" href="#admin" class="nav-link" data-section-target="admin" id="adminNav" hidden>Admin</a></li>
         </ul>
         <div class="nav__right">
@@ -92,84 +91,7 @@
         </div>
       </section>
 
-      <!-- Features -->
-      <section id="features" class="section features" aria-labelledby="features-title">
-        <div class="container">
-          <h2 id="features-title">Powerful features built for your city</h2>
-          <div class="features__grid" role="list">
-            <article class="card feature" role="listitem">
-              <div class="feature__icon" aria-hidden="true">📌</div>
-              <h3 class="feature__title">Unified Reporting</h3>
-              <p class="feature__text">Submit issues for garbage, water, roads, power, and more in one place.</p>
-            </article>
-            <article class="card feature" role="listitem">
-              <div class="feature__icon" aria-hidden="true">🔔</div>
-              <h3 class="feature__title">Real-time Alerts</h3>
-              <p class="feature__text">Get instant updates as your complaint progresses through departments.</p>
-            </article>
-            <article class="card feature" role="listitem">
-              <div class="feature__icon" aria-hidden="true">🤖</div>
-              <h3 class="feature__title">AI Prioritization</h3>
-              <p class="feature__text">Smart sorting helps teams focus on what matters most first.</p>
-            </article>
-            <article class="card feature" role="listitem">
-              <div class="feature__icon" aria-hidden="true">⭐</div>
-              <h3 class="feature__title">Feedback & Ratings</h3>
-              <p class="feature__text">Share feedback to improve services and recognize great responses.</p>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <!-- How It Works -->
-      <section id="how" class="section how" aria-labelledby="how-title">
-        <div class="container">
-          <h2 id="how-title">How It Works</h2>
-          <ol class="how__steps" aria-label="Four steps to use CityWatch">
-            <li class="step">
-              <span class="step__num" aria-hidden="true">1</span>
-              <h3 class="step__title">Login</h3>
-              <p class="step__text">Create your profile with your city to personalize updates and filter relevant issues.</p>
-            </li>
-            <li class="step">
-              <span class="step__num" aria-hidden="true">2</span>
-              <h3 class="step__title">Report</h3>
-              <p class="step__text">Describe the issue, add a photo or landmark, and pick a category like Roads or Water.</p>
-            </li>
-            <li class="step">
-              <span class="step__num" aria-hidden="true">3</span>
-              <h3 class="step__title">Track</h3>
-              <p class="step__text">Follow real-time updates as departments triage, assign, and take action.</p>
-            </li>
-            <li class="step">
-              <span class="step__num" aria-hidden="true">4</span>
-              <h3 class="step__title">Resolve</h3>
-              <p class="step__text">See outcomes, rate the response, and provide feedback to improve services.</p>
-            </li>
-          </ol>
-          <div class="card" style="margin-top:16px">
-            <h3 style="margin-top:0">Detailed Workflow</h3>
-            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">
-              <div>
-                <strong>Submission</strong>
-                <p class="muted">Smart hints guide you to write clear, actionable reports. Attachments optional.</p>
-              </div>
-              <div>
-                <strong>Classification</strong>
-                <p class="muted">AI tags category and urgency; duplicates auto-merged to avoid clutter.</p>
-              </div>
-              <div>
-                <strong>Assignment</strong>
-                <p class="muted">Routed to the right department with SLA targets and escalation paths.</p>
-              </div>
-              <div>
-                <strong>Resolution</strong>
-                <p class="muted">Completion proof added; citizens confirm and rate to close the loop.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <!-- Features and How It Works sections intentionally removed from navigation views. Basic tutorial will be added later. -->
 
       <!-- Visible Report Issue Section -->
       <section id="report" class="section report" aria-labelledby="report-title">
@@ -401,10 +323,82 @@
               <span class="field__label">Department</span>
               <input id="authorityDeptInput" type="text" placeholder="e.g., Utilities" />
             </label>
+            <label class="field">
+              <span class="field__label">Authority Username</span>
+              <input id="authorityUsernameInput" type="text" placeholder="e.g., water_dept" />
+            </label>
+            <label class="field">
+              <span class="field__label">Authority Password</span>
+              <input id="authorityPasswordInput" type="password" placeholder="Set a password" />
+            </label>
             <div class="admin__actions">
               <button class="btn btn--primary" id="addAuthorityBtn">Add Authority</button>
             </div>
             <div id="authorityList" class="muted"></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:12px">
+          <h3 style="margin-top:0">User Management</h3>
+          <div class="admin__controls">
+            <div class="user-tabs">
+              <button class="tab-btn active" data-tab="citizens">Citizens</button>
+              <button class="tab-btn" data-tab="authorities">Authorities</button>
+            </div>
+            <div id="userManagementContent">
+              <div id="citizensTab" class="tab-content active">
+                <div id="citizensList" class="user-list"></div>
+                <div style="margin-top:12px" class="card">
+                  <h4 style="margin:0 0 8px">Register Citizen (Quick)</h4>
+                  <div class="admin__controls">
+                    <label class="field">
+                      <span class="field__label">Username</span>
+                      <input id="regCitizenUsername" type="text" placeholder="e.g., john" />
+                    </label>
+                    <label class="field">
+                      <span class="field__label">Password</span>
+                      <input id="regCitizenPassword" type="password" placeholder="Optional password" />
+                    </label>
+                    <label class="field">
+                      <span class="field__label">City</span>
+                      <select id="regCitizenCity">
+                        <option>Pune</option>
+                        <option>Mumbai</option>
+                        <option>Navi Mumbai</option>
+                        <option>Thane</option>
+                        <option>Pimpri-Chinchwad</option>
+                      </select>
+                    </label>
+                    <div class="admin__actions">
+                      <button class="btn" id="addCitizenBtn">Add Citizen</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div id="authoritiesTab" class="tab-content">
+                <div id="authoritiesList" class="user-list"></div>
+                <div style="margin-top:12px" class="card">
+                  <h4 style="margin:0 0 8px">Register Authority User</h4>
+                  <div class="admin__controls">
+                    <label class="field">
+                      <span class="field__label">Username</span>
+                      <input id="regAuthorityUsername" type="text" placeholder="e.g., water_dept" />
+                    </label>
+                    <label class="field">
+                      <span class="field__label">Password</span>
+                      <input id="regAuthorityPassword" type="password" placeholder="Set a password" />
+                    </label>
+                    <label class="field">
+                      <span class="field__label">Link to Authority</span>
+                      <select id="regAuthorityLink"></select>
+                    </label>
+                    <div class="admin__actions">
+                      <button class="btn" id="addAuthorityUserBtn">Add Authority User</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
