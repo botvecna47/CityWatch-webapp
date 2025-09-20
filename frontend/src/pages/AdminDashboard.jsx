@@ -45,7 +45,7 @@ const AdminDashboard = () => {
         setStats({
           totalUsers: data.stats.totalUsers,
           totalReports: data.stats.totalReports,
-          totalCities: data.stats.totalCities || 0,
+          totalCities: data.stats.totalCities,
           activeReports: data.stats.openReports
         });
       } else {

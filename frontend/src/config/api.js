@@ -106,6 +106,12 @@ export const API_ENDPOINTS = {
   ANALYTICS_EVENTS: `${API_BASE_URL}/api/analytics/events`,
   ANALYTICS_ALERTS: `${API_BASE_URL}/api/analytics/alerts`,
   ANALYTICS_AUTHORITY_DASHBOARD: `${API_BASE_URL}/api/analytics/authority/dashboard`,
+  ANALYTICS_ADMIN_COMPREHENSIVE: `${API_BASE_URL}/api/analytics/admin/comprehensive`,
+
+  // User Reports endpoints
+  USER_REPORTS: `${API_BASE_URL}/api/user-reports`,
+  USER_REPORTS_ANALYTICS: `${API_BASE_URL}/api/user-reports/analytics`,
+  USER_REPORT_STATUS: (id) => `${API_BASE_URL}/api/user-reports/${id}/status`,
 };
 
 export default API_BASE_URL;

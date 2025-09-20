@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
+import { useNotifications } from '../contexts/NotificationContext';
 import { Link } from 'react-router-dom';
 import LazyImage from '../components/LazyImage';
-import CityMap from '../components/CityMap';
+import EnhancedCityMap from '../components/EnhancedCityMap';
 import CityChangeRequest from '../components/CityChangeRequest';
 import Button from '../components/ui/Button';
 import ReportCard from '../components/ReportCard';
@@ -13,6 +14,7 @@ import { Plus } from 'lucide-react';
 const Dashboard = () => {
   const { user, makeAuthenticatedRequest, loading: authLoading } = useAuth();
   const { success, error: showError } = useToast();
+  const { notifications, unreadCount, loading: notificationLoading } = useNotifications();
   
   // Data states
   const [announcements, setAnnouncements] = useState([]);
@@ -95,6 +97,61 @@ const Dashboard = () => {
       fetchDashboardData();
     }
   }, [user]);
+
+  // Debug notification context
+  useEffect(() => {
+    if (user) {
+      console.log('🔔 Dashboard Notification Context Debug:', {
+        notificationCount: notifications.length,
+        unreadCount: unreadCount,
+        notificationLoading: notificationLoading,
+        userCity: user.city?.name,
+        userId: user.id,
+        notifications: notifications.map(n => ({
+          type: n.type,
+          message: n.message,
+          isRead: n.isRead
+        }))
+      });
+      
+      // Test API calls directly
+      const testAPIs = async () => {
+        try {
+          console.log('🧪 Testing API calls from Dashboard...');
+          
+          // Test notifications API
+          const notifResponse = await makeAuthenticatedRequest('http://localhost:5000/api/notifications?limit=10');
+          if (notifResponse.ok) {
+            const notifData = await notifResponse.json();
+            console.log('📬 Direct Notifications API Response:', {
+              success: notifData.success,
+              count: notifData.data?.notifications?.length || 0,
+              unread: notifData.data?.unreadCount || 0
+            });
+          } else {
+            console.log('❌ Notifications API Error:', notifResponse.status);
+          }
+          
+          // Test alerts API
+          const alertsResponse = await makeAuthenticatedRequest('http://localhost:5000/api/alerts?limit=5');
+          if (alertsResponse.ok) {
+            const alertsData = await alertsResponse.json();
+            console.log('🚨 Direct Alerts API Response:', {
+              count: alertsData.alerts?.length || 0,
+              alerts: alertsData.alerts?.map(a => a.title) || []
+            });
+          } else {
+            console.log('❌ Alerts API Error:', alertsResponse.status);
+          }
+          
+        } catch (error) {
+          console.error('❌ API Test Error:', error);
+        }
+      };
+      
+      testAPIs();
+    }
+  }, [notifications, unreadCount, notificationLoading, user, makeAuthenticatedRequest]);
 
   const handleVote = (reportId, voteData) => {
     // Update the trending reports with new voting data
@@ -235,6 +292,28 @@ const Dashboard = () => {
             </div>
           </div>
         )}
+
+        {/* Notification Debug Info */}
+        <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h3 className="text-sm font-medium text-blue-800 mb-2">🔔 Notification Debug Info</h3>
+          <div className="text-sm text-blue-700 space-y-1">
+            <p><strong>Notifications Count:</strong> {notifications.length}</p>
+            <p><strong>Unread Count:</strong> {unreadCount}</p>
+            <p><strong>Loading:</strong> {notificationLoading ? 'Yes' : 'No'}</p>
+            <p><strong>User City:</strong> {user.city?.name || 'No city assigned'}</p>
+            <div className="mt-2">
+              <p><strong>Recent Notifications:</strong></p>
+              {notifications.slice(0, 3).map((notif, index) => (
+                <p key={index} className="ml-2 text-xs">
+                  {index + 1}. {notif.type}: {notif.message} ({notif.isRead ? 'Read' : 'Unread'})
+                </p>
+              ))}
+              {notifications.length === 0 && (
+                <p className="ml-2 text-xs text-gray-500">No notifications found</p>
+              )}
+            </div>
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
@@ -380,7 +459,7 @@ const Dashboard = () => {
         <div className="mt-8">
           <div className="bg-white rounded-lg p-4 shadow-sm">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">City Map</h2>
-            <CityMap height="450px" showNearbyToggle={true} />
+            <EnhancedCityMap height="500px" showFilters={true} />
           </div>
         </div>
       </div>

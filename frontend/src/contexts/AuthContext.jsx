@@ -1,12 +1,30 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { API_ENDPOINTS } from '../config/api';
+import requestThrottle from '../utils/requestThrottle';
 
-const AuthContext = createContext();
+const AuthContext = createContext({
+  user: null,
+  loading: true,
+  login: async () => {},
+  logout: () => {},
+  refreshAccessToken: async () => null,
+  isRefreshing: false,
+  lastFetchTime: 0
+});
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    // Return a default context structure to prevent errors
+    return {
+      user: null,
+      loading: true,
+      login: async () => {},
+      logout: () => {},
+      refreshAccessToken: async () => null,
+      isRefreshing: false,
+      lastFetchTime: 0
+    };
   }
   return context;
 };
@@ -14,6 +32,8 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastFetchTime, setLastFetchTime] = useState(0);
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
@@ -35,20 +55,34 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const refreshAccessToken = async () => {
+    // Prevent multiple simultaneous refresh attempts
+    if (isRefreshing) {
+      return localStorage.getItem('accessToken');
+    }
+
     const refreshToken = localStorage.getItem('refreshToken');
     
     if (!refreshToken) {
       throw new Error('No refresh token available');
     }
 
+    setIsRefreshing(true);
     try {
-      const response = await fetch(API_ENDPOINTS.REFRESH, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
+      const response = await requestThrottle.throttleRequest(
+        API_ENDPOINTS.REFRESH,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ refreshToken })
         },
-        body: JSON.stringify({ refreshToken })
-      });
+        'REFRESH_TOKEN'
+      );
+
+      if (!response) {
+        throw new Error('Request throttled');
+      }
 
       if (response.ok) {
         const data = await response.json();
@@ -56,6 +90,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('refreshToken', data.refreshToken);
         localStorage.setItem('user', JSON.stringify(data.user));
         setUser(data.user);
+        setLastFetchTime(Date.now());
         return data.accessToken;
       } else {
         throw new Error('Failed to refresh token');
@@ -64,10 +99,12 @@ export const AuthProvider = ({ children }) => {
       console.error('Error refreshing token:', error);
       logout();
       throw error;
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
-  const fetchUserData = async () => {
+  const fetchUserData = async (forceRefresh = false) => {
     const token = localStorage.getItem('accessToken');
     
     if (!token) {
@@ -75,18 +112,36 @@ export const AuthProvider = ({ children }) => {
       return;
     }
 
+    // Check if we should skip this request due to recent fetch
+    const now = Date.now();
+    const CACHE_DURATION = 60000; // 1 minute cache
+    if (!forceRefresh && (now - lastFetchTime) < CACHE_DURATION) {
+      setLoading(false);
+      return; // Skip request, data is still fresh
+    }
+
     try {
-      const response = await fetch(API_ENDPOINTS.ME, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await requestThrottle.throttleRequest(
+        API_ENDPOINTS.ME,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        },
+        'FETCH_USER_DATA'
+      );
+
+      if (!response) {
+        setLoading(false);
+        return; // Request was throttled
+      }
 
       if (response.ok) {
         const data = await response.json();
         setUser(data.user);
         // Cache user data in localStorage for faster loading
         localStorage.setItem('user', JSON.stringify(data.user));
+        setLastFetchTime(now);
       } else if (response.status === 401) {
         // Token expired, try to refresh
         try {
@@ -123,6 +178,7 @@ export const AuthProvider = ({ children }) => {
     }
     localStorage.setItem('user', JSON.stringify(userData));
     setUser(userData);
+    setLastFetchTime(Date.now()); // Update fetch time after login
   };
 
   const logout = () => {
@@ -130,6 +186,8 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
     setUser(null);
+    setLastFetchTime(0);
+    setIsRefreshing(false);
   };
 
   const makeAuthenticatedRequest = async (url, options = {}) => {
@@ -144,14 +202,39 @@ export const AuthProvider = ({ children }) => {
     };
 
     try {
-      const response = await fetch(url, requestOptions);
+      // Use throttling for authenticated requests (but allow initial loads)
+      const response = await requestThrottle.throttleRequest(
+        url,
+        requestOptions,
+        `AUTH_${options.method || 'GET'}_${url}`
+      );
+
+      if (!response) {
+        // For GET requests, retry once without throttling
+        if ((options.method || 'GET') === 'GET') {
+          console.log('Retrying GET request without throttling:', url);
+          return await fetch(url, requestOptions);
+        }
+        throw new Error('Request throttled');
+      }
       
       if (response.status === 401) {
         // Token expired, try to refresh
         try {
           token = await refreshAccessToken();
           requestOptions.headers['Authorization'] = `Bearer ${token}`;
-          return await fetch(url, requestOptions);
+          
+          const retryResponse = await requestThrottle.throttleRequest(
+            url,
+            requestOptions,
+            `AUTH_RETRY_${options.method || 'GET'}_${url}`
+          );
+          
+          if (!retryResponse) {
+            throw new Error('Retry request throttled');
+          }
+          
+          return retryResponse;
         } catch (refreshError) {
           throw new Error('Authentication failed');
         }

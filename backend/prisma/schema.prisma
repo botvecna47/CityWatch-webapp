@@ -37,6 +37,7 @@ model AuthorityType {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   users       User[]
+  reports     Report[]
 
   @@map("authority_types")
 }
@@ -131,6 +132,10 @@ model User {
   cityChangeApprovals CityChangeRequest[] @relation("CityChangeApprovals")
   reportVerifications ReportVerification[]
   reportVotes ReportVote[]
+  misleadingContentReports MisleadingContentReport[]
+  userReportsReporter UserReport[] @relation("UserReportReporter")
+  userReportsReported UserReport[] @relation("UserReportReported")
+  userReportsAssigned UserReport[] @relation("UserReportAssigned")
   approvedEvents Event[] @relation("EventApprover")
 
   @@index([role])
@@ -151,6 +156,7 @@ model Report {
   voteCount        Int               @default(1) // Number of users who voted for this report
   cityId           String
   authorId         String
+  authorityTypeId  String?           // AI-determined authority type for this report
   deleted          Boolean           @default(false)
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
@@ -162,8 +168,10 @@ model Report {
   embedding        ReportEmbedding?
   author           User              @relation(fields: [authorId], references: [id])
   city             City              @relation(fields: [cityId], references: [id])
+  authorityType    AuthorityType?    @relation(fields: [authorityTypeId], references: [id])
   verifications    ReportVerification[]
   votes            ReportVote[]
+  misleadingReports MisleadingContentReport[]
 
   @@index([cityId])
   @@index([status])
@@ -173,6 +181,7 @@ model Report {
   @@index([createdAt])
   @@index([authorId])
   @@index([category])
+  @@index([authorityTypeId])
   @@index([latitude, longitude])
   @@map("reports")
 }
@@ -317,6 +326,52 @@ model ReportEmbedding {
   report    Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
 
   @@map("report_embeddings")
+}
+
+model MisleadingContentReport {
+  id         String   @id @default(uuid())
+  reportId   String
+  reporterId String
+  reason     String
+  type       String   @default("MISLEADING_CONTENT") // MISLEADING_CONTENT, SPAM, INAPPROPRIATE
+  status     String   @default("PENDING") // PENDING, REVIEWED, DISMISSED, ACTION_TAKEN
+  adminNotes String?
+  evidence   String?  // JSON string containing evidence file paths/URLs
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  report     Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  reporter   User     @relation(fields: [reporterId], references: [id])
+
+  @@map("misleading_content_reports")
+}
+
+model UserReport {
+  id          String   @id @default(uuid())
+  reporterId  String   // User reporting
+  reportedUserId String? // User being reported (null for authority reports)
+  authorityId String?  // Authority being reported (null for user reports)
+  type        String   // USER_BEHAVIOR, SPAM, INAPPROPRIATE_CONTENT, HARASSMENT, FRAUD, OTHER
+  reason      String
+  description String
+  evidence    String?  // JSON string containing evidence file paths/URLs
+  status      String   @default("PENDING") // PENDING, REVIEWED, APPROVED, DISMISSED, ACTION_TAKEN
+  priority    String   @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
+  adminNotes  String?
+  assignedTo  String?  // Admin assigned to handle this report
+  resolvedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  reporter    User     @relation("UserReportReporter", fields: [reporterId], references: [id])
+  reportedUser User?   @relation("UserReportReported", fields: [reportedUserId], references: [id])
+  assignedAdmin User?  @relation("UserReportAssigned", fields: [assignedTo], references: [id])
+
+  @@index([reporterId])
+  @@index([reportedUserId])
+  @@index([authorityId])
+  @@index([status])
+  @@index([priority])
+  @@index([createdAt])
+  @@map("user_reports")
 }
 
 enum Role {

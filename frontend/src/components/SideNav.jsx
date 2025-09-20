@@ -12,7 +12,8 @@ import {
   Calendar,
   X,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  BarChart3
 } from 'lucide-react';
 
 const SideNav = ({ isOpen, onClose, onToggle }) => {
@@ -60,6 +61,13 @@ const SideNav = ({ isOpen, onClose, onToggle }) => {
       icon: Calendar,
       path: '/admin/event-approvals',
       description: 'Review pending events'
+    },
+    {
+      id: 'analytics',
+      label: 'Analytics',
+      icon: BarChart3,
+      path: '/admin/analytics',
+      description: 'Data analytics and insights'
     },
     {
       id: 'reports',

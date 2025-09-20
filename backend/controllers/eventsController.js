@@ -1,6 +1,5 @@
 const prisma = require('../services/database');
-const fs = require('fs');
-const path = require('path');
+const imageStorage = require('../services/imageStorage');
 const { 
   createEventNotification, 
   createEventApprovalNotification 
@@ -51,7 +50,20 @@ const createEvent = async (req, res) => {
     // Handle image upload
     let imageUrl = null;
     if (req.file) {
-      imageUrl = `/assets/events/${req.file.filename}`;
+      try {
+        // Process and save image with optimization
+        const processedImage = await imageStorage.processAndSaveImage(
+          req.file.buffer,
+          req.file.originalname,
+          'event'
+        );
+        imageUrl = processedImage.url;
+      } catch (error) {
+        console.error('Error processing event image:', error);
+        return res.status(500).json({
+          error: 'Failed to process event image'
+        });
+      }
     }
 
     // Create the event
@@ -87,10 +99,7 @@ const createEvent = async (req, res) => {
 
     // Event is now pending approval - no immediate notifications
 
-    // Generate image URL if present
-    if (event.imageUrl) {
-      event.imageUrl = `http://localhost:5000${event.imageUrl}`;
-    }
+    // Image URL is already properly formatted by imageStorage
 
     res.status(201).json({
       success: true,
@@ -164,16 +173,10 @@ const getEvents = async (req, res) => {
       prisma.event.count({ where })
     ]);
 
-    // Generate image URLs
-    const eventsWithUrls = events.map((event) => ({
-      ...event,
-      imageUrl: event.imageUrl
-        ? `http://localhost:5000${event.imageUrl}`
-        : null
-    }));
+    // Image URLs are already properly formatted by imageStorage
 
     res.json({
-      events: eventsWithUrls,
+      events,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -221,10 +224,7 @@ const getEventById = async (req, res) => {
       });
     }
 
-    // Generate image URL if present
-    if (event.imageUrl) {
-      event.imageUrl = `http://localhost:5000${event.imageUrl}`;
-    }
+    // Image URL is already properly formatted by imageStorage
 
     res.json({ event });
   } catch (error) {
@@ -270,16 +270,8 @@ const deleteEvent = async (req, res) => {
 
     // Delete the event image if it exists
     if (event.imageUrl) {
-      const imagePath = path.join(
-        __dirname,
-        '..',
-        'assets',
-        'events',
-        path.basename(event.imageUrl)
-      );
-      if (fs.existsSync(imagePath)) {
-        fs.unlinkSync(imagePath);
-      }
+      const filename = path.basename(event.imageUrl);
+      await imageStorage.deleteImage(filename, 'event');
     }
 
     // Delete the event
@@ -336,13 +328,7 @@ const getMyEvents = async (req, res) => {
       prisma.event.count({ where: { createdBy: userId } })
     ]);
 
-    // Generate image URLs
-    const eventsWithUrls = events.map((event) => ({
-      ...event,
-      imageUrl: event.imageUrl
-        ? `http://localhost:5000${event.imageUrl}`
-        : null
-    }));
+    // Image URLs are already properly formatted by imageStorage
 
     res.json({
       events: eventsWithUrls,
@@ -574,12 +560,7 @@ const getPendingEvents = async (req, res) => {
       where: { status: 'PENDING' }
     });
 
-    // Generate image URLs
-    events.forEach(event => {
-      if (event.imageUrl) {
-        event.imageUrl = `http://localhost:5000${event.imageUrl}`;
-      }
-    });
+    // Image URLs are already properly formatted by imageStorage
 
     res.json({
       success: true,

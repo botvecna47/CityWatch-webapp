@@ -3,16 +3,16 @@ const axios = require('axios');
 
 // Configuration from environment variables
 const CONFIG = {
-  enabled: process.env.DUPLICATE_CHECK_ENABLED === 'true',
-  geoRadiusMeters: parseInt(process.env.DUPLICATE_GEO_RADIUS_METERS) || 100,
-  timeWindowMinutes: parseInt(process.env.DUPLICATE_TIME_WINDOW_MINUTES) || 1440, // 24 hours
-  embeddingThreshold: parseFloat(process.env.DUPLICATE_EMBEDDING_THRESHOLD) || 0.78,
+  enabled: process.env.DUPLICATE_CHECK_ENABLED === 'true' || true, // Enable by default
+  geoRadiusMeters: parseInt(process.env.DUPLICATE_GEO_RADIUS_METERS) || 200, // Increased radius
+  timeWindowMinutes: parseInt(process.env.DUPLICATE_TIME_WINDOW_MINUTES) || 10080, // 1 week
+  embeddingThreshold: parseFloat(process.env.DUPLICATE_EMBEDDING_THRESHOLD) || 0.75, // Lower threshold for more sensitivity
   ollamaUrl: process.env.OLLAMA_URL,
   openaiApiKey: process.env.OPENAI_API_KEY,
-  // Rule-based thresholds
-  stringSimilarityThreshold: 0.85,
-  jaccardThreshold: 0.7,
-  levenshteinThreshold: 0.8
+  // Rule-based thresholds (more aggressive)
+  stringSimilarityThreshold: 0.80, // Lower threshold
+  jaccardThreshold: 0.65, // Lower threshold
+  levenshteinThreshold: 0.75 // Lower threshold
 };
 
 /**

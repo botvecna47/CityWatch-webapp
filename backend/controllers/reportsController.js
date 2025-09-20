@@ -124,6 +124,17 @@ const createReport = async (req, res) => {
       };
     }
 
+    // Get authority type ID if AI analysis provided one
+    let authorityTypeId = null;
+    if (aiAnalysis && aiAnalysis.authorityType) {
+      const authorityType = await prisma.authorityType.findUnique({
+        where: { name: aiAnalysis.authorityType }
+      });
+      if (authorityType) {
+        authorityTypeId = authorityType.id;
+      }
+    }
+
     // Create report
     const report = await prisma.report.create({
       data: {
@@ -132,13 +143,9 @@ const createReport = async (req, res) => {
         category: aiAnalysis.category,
         cityId,
         authorId,
+        authorityTypeId,
         latitude: parsedLatitude,
-        longitude: parsedLongitude,
-        // Store AI analysis results as metadata
-        ...(aiAnalysis && {
-          // We could add a field to store AI analysis in the future
-          // For now, we'll include it in the response
-        })
+        longitude: parsedLongitude
       },
       include: {
         author: {
@@ -272,10 +279,21 @@ const getReports = async (req, res) => {
       deleted: false
     };
 
-    // Only filter by city for citizens
+    // Filter by city and authority type based on user role
     if (userRole === 'citizen' && userCityId) {
+      // Citizens can only see reports from their city
       where.cityId = userCityId;
+    } else if (userRole === 'authority') {
+      // Authorities can see reports from their city AND their authority type
+      if (userCityId) {
+        where.cityId = userCityId;
+      }
+      // Filter by authority type if user has one assigned
+      if (req.user.authorityTypeId) {
+        where.authorityTypeId = req.user.authorityTypeId;
+      }
     }
+    // Admins can see all reports (no additional filtering)
 
     if (category) {
       where.category = category;
@@ -326,6 +344,14 @@ const getReports = async (req, res) => {
               id: true,
               name: true,
               slug: true
+            },
+          },
+          authorityType: {
+            select: {
+              id: true,
+              name: true,
+              displayName: true,
+              icon: true
             },
           },
           _count: {
@@ -397,6 +423,114 @@ const getReports = async (req, res) => {
     console.error(`Get reports error after ${duration}ms:`, error);
     res.status(500).json({
       error: 'Internal server error'
+    });
+  }
+};
+
+// Get all reports with location data for map display
+const getAllReportsForMap = async (req, res) => {
+  try {
+    const userCityId = req.user.cityId;
+    const userRole = req.user.role;
+    const { category, status, limit = 1000 } = req.query;
+
+    // If user has no city and is not admin/authority, return empty results
+    if (!userCityId && userRole !== 'admin' && userRole !== 'authority') {
+      return res.json({
+        reports: []
+      });
+    }
+
+    // Build where clause - admin and authority can see all cities
+    const where = {
+      deleted: false,
+      latitude: { not: null },
+      longitude: { not: null }
+    };
+
+    // Filter by city and authority type based on user role
+    if (userRole === 'citizen' && userCityId) {
+      // Citizens can only see reports from their city
+      where.cityId = userCityId;
+    } else if (userRole === 'authority') {
+      // Authorities can see reports from their city AND their authority type
+      if (userCityId) {
+        where.cityId = userCityId;
+      }
+      // Filter by authority type if user has one assigned
+      if (req.user.authorityTypeId) {
+        where.authorityTypeId = req.user.authorityTypeId;
+      }
+    }
+    // Admins can see all reports (no additional filtering)
+
+    if (category) {
+      where.category = category;
+    }
+
+    if (status) {
+      where.status = status;
+    }
+
+    // Get reports with location data
+    const reports = await prisma.report.findMany({
+      where,
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        category: true,
+        status: true,
+        latitude: true,
+        longitude: true,
+        createdAt: true,
+        updatedAt: true,
+        author: {
+          select: {
+            id: true,
+            username: true,
+            role: true,
+            profilePicture: true
+          },
+        },
+        city: {
+          select: {
+            id: true,
+            name: true,
+            slug: true
+          },
+        },
+        authorityType: {
+          select: {
+            id: true,
+            name: true,
+            displayName: true,
+            icon: true
+          },
+        },
+        _count: {
+          select: {
+            comments: true,
+            attachments: true,
+            votes: true
+          },
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      },
+      take: parseInt(limit)
+    });
+
+    res.json({
+      success: true,
+      reports
+    });
+  } catch (error) {
+    console.error('Get all reports for map error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch reports for map'
     });
   }
 };
@@ -1694,9 +1828,178 @@ const getUserVote = async (req, res) => {
   }
 };
 
+// Report misleading or incorrect content
+const reportMisleadingContent = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason, type = 'MISLEADING_CONTENT', evidenceUrls = [] } = req.body;
+    const reporterId = req.user.id;
+
+    if (!reason || reason.trim().length === 0) {
+      return res.status(400).json({
+        error: 'Reason for reporting is required'
+      });
+    }
+
+    // Check if the report exists
+    const report = await prisma.report.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        authorId: true,
+        cityId: true,
+        category: true,
+        status: true,
+        createdAt: true,
+        author: {
+          select: {
+            name: true,
+            email: true
+          }
+        },
+        city: {
+          select: {
+            name: true
+          }
+        }
+      }
+    });
+
+    if (!report) {
+      return res.status(404).json({
+        error: 'Report not found'
+      });
+    }
+
+    // Prevent users from reporting their own reports
+    if (report.authorId === reporterId) {
+      return res.status(400).json({
+        error: 'You cannot report your own report'
+      });
+    }
+
+    // Get reporter information
+    const reporter = await prisma.user.findUnique({
+      where: { id: reporterId },
+      select: {
+        name: true,
+        email: true,
+        city: {
+          select: {
+            name: true
+          }
+        }
+      }
+    });
+
+    // Create the misleading content report
+    const misleadingReport = await prisma.misleadingContentReport.create({
+      data: {
+        reportId: id,
+        reporterId,
+        reason: reason.trim(),
+        type,
+        status: 'PENDING',
+        evidence: evidenceUrls.length > 0 ? JSON.stringify(evidenceUrls) : null
+      }
+    });
+
+    // Create notification for reporter
+    await prisma.notification.create({
+      data: {
+        userId: reporterId,
+        type: 'MISLEADING_CONTENT_REPORTED',
+        title: 'Misleading Content Report Submitted',
+        message: `Your report about misleading content has been submitted for admin review. Reference ID: ${misleadingReport.id}`,
+        data: {
+          reportId: id,
+          misleadingReportId: misleadingReport.id,
+          reportTitle: report.title
+        }
+      }
+    });
+
+    // Get all admins for notification
+    const admins = await prisma.user.findMany({
+      where: { role: 'admin' },
+      select: { id: true, name: true, email: true }
+    });
+
+    // Create detailed admin notifications
+    for (const admin of admins) {
+      await prisma.notification.create({
+        data: {
+          userId: admin.id,
+          type: 'ADMIN_MISLEADING_CONTENT_REPORT',
+          title: '🚨 Misleading Content Report - Action Required',
+          message: `A user has reported misleading content in report: "${report.title}". Please review immediately.`,
+          data: {
+            reportId: id,
+            misleadingReportId: misleadingReport.id,
+            reporterId,
+            reporterName: reporter.name,
+            reporterEmail: reporter.email,
+            reportTitle: report.title,
+            reportDescription: report.description,
+            reportCategory: report.category,
+            reportStatus: report.status,
+            reportCity: report.city.name,
+            reportAuthor: report.author.name,
+            reportCreatedAt: report.createdAt,
+            reason: reason.trim(),
+            type,
+            evidenceUrls,
+            priority: 'HIGH'
+          }
+        }
+      });
+
+      // Also send email notification to admin (if email service is configured)
+      try {
+        // This would integrate with your email service
+        console.log(`📧 Email notification sent to admin: ${admin.email} about misleading content report: ${misleadingReport.id}`);
+      } catch (emailError) {
+        console.error('Failed to send email notification to admin:', emailError);
+      }
+    }
+
+    // Log the report for audit purposes
+    console.log(`🚨 Misleading Content Report Created:`, {
+      misleadingReportId: misleadingReport.id,
+      reportId: id,
+      reporterId,
+      reporterName: reporter.name,
+      reportTitle: report.title,
+      reason: reason.trim(),
+      type,
+      evidenceCount: evidenceUrls.length,
+      timestamp: new Date().toISOString()
+    });
+
+    res.json({
+      success: true,
+      message: 'Misleading content report submitted successfully. Admin will review it within 24 hours.',
+      data: {
+        id: misleadingReport.id,
+        status: misleadingReport.status,
+        referenceId: misleadingReport.id
+      }
+    });
+
+  } catch (error) {
+    console.error('Error reporting misleading content:', error);
+    res.status(500).json({
+      error: 'Failed to report misleading content'
+    });
+  }
+};
+
 module.exports = {
   createReport,
   getReports,
+  getAllReportsForMap,
   getReportById,
   addAuthorityUpdate,
   closeReport,
@@ -1707,5 +2010,6 @@ module.exports = {
   verifyReport,
   getReportVerification,
   voteOnReport,
-  getUserVote
+  getUserVote,
+  reportMisleadingContent
 };

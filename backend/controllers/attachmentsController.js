@@ -60,8 +60,8 @@ const uploadFiles = async (req, res) => {
       } catch (error) {
         console.error('Error processing file:', error);
         // Clean up any partially processed files
-        if (file.filename) {
-          await imageStorage.deleteImage(file.filename, 'report');
+        if (processedImage && processedImage.filename) {
+          await imageStorage.deleteImage(processedImage.filename, 'report');
         }
         throw error;
       }

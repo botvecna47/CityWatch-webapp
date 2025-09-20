@@ -14,13 +14,20 @@ import {
   Megaphone, 
   AlertTriangle,
   LogOut,
-  User
+  User,
+  Map
 } from 'lucide-react';
 
 const TopNav = ({ onToggleSidebar, sidebarOpen }) => {
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const authContext = useAuth();
+  const { user, logout } = authContext;
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Don't render if user is not loaded yet
+  if (!user) {
+    return null;
+  }
 
   const isActive = (path) => {
     return location.pathname === path;
@@ -38,12 +45,13 @@ const TopNav = ({ onToggleSidebar, sidebarOpen }) => {
   const globalNavItems = [
     { path: '/dashboard', label: 'Dashboard', icon: Home },
     { path: '/reports', label: 'Reports', icon: FileText },
+    { path: '/reports/map', label: 'Reports Map', icon: Map },
     { path: '/events', label: 'Events', icon: Calendar },
     { path: '/announcements', label: 'Announcements', icon: Megaphone },
   ];
 
-  // Add alerts for authority and admin users
-  if (user && ['authority', 'admin'].includes(user.role)) {
+  // Add alerts for all users (citizens can view, authorities/admins can manage)
+  if (user) {
     globalNavItems.push({ path: '/alerts', label: 'Alerts', icon: AlertTriangle });
   }
 

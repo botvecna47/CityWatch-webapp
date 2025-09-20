@@ -1,9 +1,24 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertTriangle, Eye, X, FileText, MapPin, Clock } from 'lucide-react';
+import { AlertTriangle, Eye, X, FileText, MapPin, Clock, ThumbsUp, Flag } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
+import { API_ENDPOINTS } from '../config/api';
 import Button from './ui/Button';
 
 const DuplicateReportModal = ({ isOpen, onClose, matches, onViewReport, onSubmitAnyway }) => {
+  const { makeAuthenticatedRequest } = useAuth();
+  const { success: showSuccess, error: showError } = useToast();
+  
+  const [showVoteModal, setShowVoteModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [selectedReport, setSelectedReport] = useState(null);
+  const [isVoting, setIsVoting] = useState(false);
+  const [isReporting, setIsReporting] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+  const [reportType, setReportType] = useState('MISLEADING_CONTENT');
+  const [evidenceFiles, setEvidenceFiles] = useState([]);
+
   if (!isOpen) return null;
 
   const getStatusColor = (status) => {
@@ -19,6 +34,82 @@ const DuplicateReportModal = ({ isOpen, onClose, matches, onViewReport, onSubmit
       default:
         return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  // Handle severity voting
+  const handleVoteSeverity = async (severity) => {
+    if (!selectedReport) return;
+    
+    setIsVoting(true);
+    try {
+      const response = await makeAuthenticatedRequest(API_ENDPOINTS.REPORT_VOTE(selectedReport.id), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ severity })
+      });
+
+      if (response.ok) {
+        showSuccess('Your vote has been recorded! Thank you for helping prioritize this issue.');
+        setShowVoteModal(false);
+        setSelectedReport(null);
+      } else {
+        const errorData = await response.json();
+        showError(errorData.error || 'Failed to vote on report severity');
+      }
+    } catch (error) {
+      console.error('Error voting on report:', error);
+      showError('Failed to vote on report severity');
+    } finally {
+      setIsVoting(false);
+    }
+  };
+
+  // Handle reporting misleading content
+  const handleReportMisleading = async () => {
+    if (!selectedReport || !reportReason.trim()) return;
+    
+    setIsReporting(true);
+    try {
+      const response = await makeAuthenticatedRequest(API_ENDPOINTS.REPORTS_BY_ID(selectedReport.id) + '/report-misleading', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          reason: reportReason.trim(),
+          type: 'MISLEADING_CONTENT'
+        })
+      });
+
+      if (response.ok) {
+        showSuccess('Report submitted to admin for review. Thank you for helping maintain report quality.');
+        setShowReportModal(false);
+        setSelectedReport(null);
+        setReportReason('');
+      } else {
+        const errorData = await response.json();
+        showError(errorData.error || 'Failed to report misleading content');
+      }
+    } catch (error) {
+      console.error('Error reporting misleading content:', error);
+      showError('Failed to report misleading content');
+    } finally {
+      setIsReporting(false);
+    }
+  };
+
+  // Open vote modal
+  const openVoteModal = (report) => {
+    setSelectedReport(report);
+    setShowVoteModal(true);
+  };
+
+  // Open report modal
+  const openReportModal = (report) => {
+    setSelectedReport(report);
+    setShowReportModal(true);
   };
 
   const formatDate = (dateString) => {
@@ -142,6 +233,22 @@ const DuplicateReportModal = ({ isOpen, onClose, matches, onViewReport, onSubmit
                       >
                         View Report
                       </Button>
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        leftIcon={<ThumbsUp className="w-4 h-4" />}
+                        onClick={() => openVoteModal(match)}
+                      >
+                        Vote Severity
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        leftIcon={<Flag className="w-4 h-4" />}
+                        onClick={() => openReportModal(match)}
+                      >
+                        Report Issue
+                      </Button>
                     </div>
                   </motion.div>
                 ))}
@@ -171,6 +278,117 @@ const DuplicateReportModal = ({ isOpen, onClose, matches, onViewReport, onSubmit
           </motion.div>
         </div>
       )}
+
+      {/* Vote Severity Modal */}
+      <AnimatePresence>
+        {showVoteModal && selectedReport && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-lg p-6 max-w-md w-full mx-4"
+            >
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Vote on Report Severity
+              </h3>
+              <p className="text-sm text-gray-600 mb-4">
+                How severe is this issue? Your vote helps prioritize the response.
+              </p>
+              <p className="text-xs text-gray-500 mb-4">
+                Report: "{selectedReport.title}"
+              </p>
+              
+              <div className="grid grid-cols-5 gap-2 mb-6">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((severity) => (
+                  <button
+                    key={severity}
+                    onClick={() => handleVoteSeverity(severity)}
+                    disabled={isVoting}
+                    className={`px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${
+                      isVoting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'
+                    } ${
+                      severity <= 3 ? 'border-red-300 text-red-700 bg-red-50' :
+                      severity <= 6 ? 'border-yellow-300 text-yellow-700 bg-yellow-50' :
+                      'border-green-300 text-green-700 bg-green-50'
+                    }`}
+                  >
+                    {severity}
+                  </button>
+                ))}
+              </div>
+              
+              <div className="flex justify-end space-x-3">
+                <Button
+                  variant="secondary"
+                  onClick={() => setShowVoteModal(false)}
+                  disabled={isVoting}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Report Misleading Content Modal */}
+      <AnimatePresence>
+        {showReportModal && selectedReport && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-lg p-6 max-w-md w-full mx-4"
+            >
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Report Misleading Content
+              </h3>
+              <p className="text-sm text-gray-600 mb-4">
+                If this report contains incorrect or misleading information, please provide details below.
+              </p>
+              <p className="text-xs text-gray-500 mb-4">
+                Report: "{selectedReport.title}"
+              </p>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Reason for reporting *
+                </label>
+                <textarea
+                  value={reportReason}
+                  onChange={(e) => setReportReason(e.target.value)}
+                  placeholder="Please explain why this report is misleading or incorrect..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  rows={4}
+                  disabled={isReporting}
+                />
+              </div>
+              
+              <div className="flex justify-end space-x-3">
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setShowReportModal(false);
+                    setReportReason('');
+                  }}
+                  disabled={isReporting}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleReportMisleading}
+                  disabled={isReporting || !reportReason.trim()}
+                  loading={isReporting}
+                >
+                  Submit Report
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </AnimatePresence>
   );
 };

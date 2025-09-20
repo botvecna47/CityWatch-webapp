@@ -5,35 +5,32 @@ import { API_ENDPOINTS } from '../config/api';
 import { Bell, Calendar, MapPin, User, AlertTriangle, Info, CheckCircle } from 'lucide-react';
 
 const Announcements = () => {
-  const { user } = useAuth();
+  const { user, makeAuthenticatedRequest } = useAuth();
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState('all'); // all, alerts, events
 
   useEffect(() => {
-    fetchAnnouncements();
-  }, []);
+    if (user) {
+      fetchAnnouncements();
+    }
+  }, [user]);
 
   const fetchAnnouncements = async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
-      const token = localStorage.getItem('accessToken');
+      setError(null);
       
-      // Fetch both alerts and events
+      // Fetch both alerts and events using makeAuthenticatedRequest
       const [alertsResponse, eventsResponse] = await Promise.all([
-        fetch(`${API_ENDPOINTS.ALERTS}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }),
-        fetch(`${API_ENDPOINTS.EVENTS}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        })
+        makeAuthenticatedRequest(`${API_ENDPOINTS.ALERTS}`),
+        makeAuthenticatedRequest(`${API_ENDPOINTS.EVENTS}`)
       ]);
 
       if (alertsResponse.ok && eventsResponse.ok) {
@@ -42,12 +39,12 @@ const Announcements = () => {
         
         // Combine alerts and events into announcements
         const combinedAnnouncements = [
-          ...alertsData.alerts.map(alert => ({
+          ...(alertsData.alerts || []).map(alert => ({
             ...alert,
             type: 'alert',
             date: alert.createdAt
           })),
-          ...eventsData.events.map(event => ({
+          ...(eventsData.events || []).map(event => ({
             ...event,
             type: 'event',
             date: event.dateTime
@@ -56,11 +53,14 @@ const Announcements = () => {
 
         setAnnouncements(combinedAnnouncements);
       } else {
+        const alertsError = !alertsResponse.ok ? await alertsResponse.json() : null;
+        const eventsError = !eventsResponse.ok ? await eventsResponse.json() : null;
+        console.error('Announcements API Errors:', { alertsError, eventsError });
         setError('Failed to fetch announcements');
       }
     } catch (err) {
       console.error('Error fetching announcements:', err);
-      setError('Failed to fetch announcements');
+      setError('Failed to fetch announcements: ' + err.message);
     } finally {
       setLoading(false);
     }

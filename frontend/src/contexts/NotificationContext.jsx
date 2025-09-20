@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
+import requestThrottle from '../utils/requestThrottle';
 
 const NotificationContext = createContext();
 
@@ -12,18 +13,28 @@ export const useNotifications = () => {
 };
 
 export const NotificationProvider = ({ children }) => {
-  const { user, makeAuthenticatedRequest } = useAuth();
+  // All hooks must be called at the top level, before any early returns
+  const authContext = useAuth();
+  const { user, makeAuthenticatedRequest } = authContext;
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [lastFetchTime, setLastFetchTime] = useState(0);
 
-  // Polling interval (30 seconds)
-  const POLLING_INTERVAL = 30000;
+  // Reduced polling interval (2 minutes) and add request deduplication
+  const POLLING_INTERVAL = 120000; // 2 minutes instead of 30 seconds
+  const REQUEST_CACHE_DURATION = 30000; // 30 seconds cache
 
-  // Fetch notifications from API
-  const fetchNotifications = useCallback(async (page = 1, limit = 20, unreadOnly = false) => {
+  // Fetch notifications from API with caching and deduplication
+  const fetchNotifications = useCallback(async (page = 1, limit = 20, unreadOnly = false, forceRefresh = false) => {
     if (!user) return;
+
+    // Check if we should skip this request due to recent fetch
+    const now = Date.now();
+    if (!forceRefresh && (now - lastFetchTime) < REQUEST_CACHE_DURATION) {
+      return null; // Skip request, data is still fresh
+    }
 
     try {
       setLoading(true);
@@ -42,6 +53,7 @@ export const NotificationProvider = ({ children }) => {
       }
 
       const data = await response.json();
+      setLastFetchTime(now); // Update last fetch time
       return data.data;
     } catch (err) {
       console.error('Error fetching notifications:', err);
@@ -50,7 +62,7 @@ export const NotificationProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [user, makeAuthenticatedRequest]);
+  }, [user, makeAuthenticatedRequest, REQUEST_CACHE_DURATION]);
 
   // Fetch unread count
   const fetchUnreadCount = useCallback(async () => {
@@ -131,10 +143,10 @@ export const NotificationProvider = ({ children }) => {
   }, [user, makeAuthenticatedRequest]);
 
   // Load initial notifications
-  const loadNotifications = useCallback(async () => {
+  const loadNotifications = useCallback(async (forceRefresh = false) => {
     if (!user) return;
 
-    const data = await fetchNotifications(1, 20, false);
+    const data = await fetchNotifications(1, 20, false, forceRefresh);
     if (data) {
       setNotifications(data.notifications || data.data?.notifications || []);
     }
@@ -143,34 +155,30 @@ export const NotificationProvider = ({ children }) => {
     await fetchUnreadCount();
   }, [user, fetchNotifications, fetchUnreadCount]);
 
-  // Set up polling
+  // Set up polling with optimized intervals
   useEffect(() => {
     if (!user) {
       setNotifications([]);
       setUnreadCount(0);
+      setLastFetchTime(0);
       return;
     }
 
-    // Load initial data
+    // Load initial data only once
     loadNotifications();
 
-    // Set up polling interval
+    // Set up polling interval with reduced frequency
     const interval = setInterval(() => {
+      // Only fetch unread count, not full notifications list
       fetchUnreadCount();
-      // Also fetch new notifications to keep the list updated
-      fetchNotifications(1, 20, false).then(data => {
-        if (data) {
-          setNotifications(data.notifications || data.data?.notifications || []);
-        }
-      });
     }, POLLING_INTERVAL);
 
     return () => clearInterval(interval);
-  }, [user, loadNotifications, fetchUnreadCount, fetchNotifications]);
+  }, [user, loadNotifications, fetchUnreadCount]);
 
   // Refresh notifications (for manual refresh)
   const refreshNotifications = useCallback(async () => {
-    await loadNotifications();
+    await loadNotifications(true); // Force refresh
   }, [loadNotifications]);
 
   // Navigate to notification link

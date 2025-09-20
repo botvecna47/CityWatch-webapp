@@ -3,14 +3,30 @@ const router = express.Router();
 const authMiddleware = require('../middleware/auth');
 // const { requireAdmin } = require('../middleware/roleAuth'); // Not used in this file
 const { heavyGetLimiter, postLimiter } = require('../middleware/rateLimiter');
-const {
-  upload,
-  saveValidatedFiles,
-  handleUploadError,
-} = require('../middleware/upload');
+const multer = require('multer');
+
+// Configure multer for memory storage (for image processing)
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+    files: 5 // Maximum 5 files per request
+  },
+  fileFilter: (req, file, cb) => {
+    // Only allow image files
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'), false);
+    }
+  }
+});
 const {
   createReport,
   getReports,
+  getAllReportsForMap,
   getReportById,
   addAuthorityUpdate,
   closeReport,
@@ -22,6 +38,7 @@ const {
   getReportVerification,
   voteOnReport,
   getUserVote,
+  reportMisleadingContent,
 } = require('../controllers/reportsController');
 
 // All routes require authentication
@@ -39,6 +56,9 @@ router.get('/', heavyGetLimiter, getReports);
 // GET /api/reports/nearby - Get reports near a location
 router.get('/nearby', heavyGetLimiter, getNearbyReports);
 
+// GET /api/reports/map/all - Get all reports with location data for map display
+router.get('/map/all', heavyGetLimiter, getAllReportsForMap);
+
 // GET /api/reports/:id - Get single report
 router.get('/:id', heavyGetLimiter, getReportById);
 
@@ -50,8 +70,6 @@ router.post(
   '/:id/updates',
   postLimiter,
   upload.array('resolutionImages', 5),
-  saveValidatedFiles,
-  handleUploadError,
   addAuthorityUpdate
 );
 
@@ -72,5 +90,8 @@ router.post('/:id/vote', postLimiter, voteOnReport);
 
 // GET /api/reports/:id/vote - Get user's vote on report
 router.get('/:id/vote', getUserVote);
+
+// POST /api/reports/:id/report-misleading - Report misleading content
+router.post('/:id/report-misleading', postLimiter, reportMisleadingContent);
 
 module.exports = router;

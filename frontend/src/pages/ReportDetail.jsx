@@ -4,6 +4,17 @@ import { useAuth } from '../contexts/AuthContext';
 import { API_ENDPOINTS } from '../config/api';
 import Button from '../components/ui/Button';
 import { ArrowLeft } from 'lucide-react';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Fix for default markers in react-leaflet
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
 
 const ReportDetail = () => {
   const { id } = useParams();
@@ -525,6 +536,62 @@ const ReportDetail = () => {
                     </div>
                   </div>
 
+                  {/* Report Location Map */}
+                  <div className="bg-white rounded-lg shadow-md p-6">
+                    <h2 className="text-xl font-semibold text-gray-900 mb-4">Report Location</h2>
+                    <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                      <div className="flex items-center">
+                        <svg className="w-5 h-5 text-blue-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                        </svg>
+                        <div>
+                          <p className="text-sm font-medium text-blue-900">Exact Location</p>
+                          <p className="text-xs text-blue-700">
+                            <span className="font-medium">{report.city?.name}</span> - 
+                            Latitude: {report.latitude?.toFixed(6)}, Longitude: {report.longitude?.toFixed(6)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {report.latitude && report.longitude ? (
+                      <div className="h-64 rounded-lg overflow-hidden border border-gray-200">
+                        <MapContainer
+                          center={[report.latitude, report.longitude]}
+                          zoom={16}
+                          style={{ height: '100%', width: '100%' }}
+                        >
+                          <TileLayer
+                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                          />
+                          <Marker position={[report.latitude, report.longitude]}>
+                            <Popup>
+                              <div className="text-center">
+                                <h3 className="font-semibold text-gray-900 mb-2">{report.title}</h3>
+                                <p className="text-sm text-gray-600 mb-1">{report.category}</p>
+                                <p className="text-xs text-blue-600 font-medium mb-2">{report.city?.name}</p>
+                                <p className="text-xs text-gray-500">
+                                  {report.latitude.toFixed(6)}, {report.longitude.toFixed(6)}
+                                </p>
+                              </div>
+                            </Popup>
+                          </Marker>
+                        </MapContainer>
+                      </div>
+                    ) : (
+                      <div className="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
+                        <div className="text-center">
+                          <svg className="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          <p className="text-gray-500">No location data available</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
               {/* Authority Updates */}
               {report.authorityUpdates && report.authorityUpdates.length > 0 && (
                 <div className="bg-white rounded-lg shadow-md p-6">
@@ -813,7 +880,7 @@ const ReportDetail = () => {
                           <div>
                             <div className="relative">
                               <img
-                                src={attachment.url}
+                                src={`http://localhost:5000${attachment.url}`}
                                 alt={attachment.filename}
                                 className="w-full h-32 object-cover rounded-md mb-2"
                                 onError={(e) => {
@@ -846,7 +913,7 @@ const ReportDetail = () => {
                               </svg>
                             </div>
                             <a
-                              href={attachment.url}
+                              href={`http://localhost:5000${attachment.url}`}
                               download={attachment.filename}
                               className="text-sm font-medium text-blue-600 hover:text-blue-800 truncate block"
                             >

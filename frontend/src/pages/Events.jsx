@@ -16,20 +16,29 @@ const Events = () => {
 
   // Fetch events
   const fetchEvents = async (page = 1) => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
+      console.log('Fetching events for user:', user.username, 'role:', user.role);
       const response = await makeAuthenticatedRequest(`http://localhost:5000/api/events?page=${page}&limit=12`);
       
       if (response.ok) {
         const data = await response.json();
-        setEvents(data.events);
-        setPagination(data.pagination);
+        console.log('Events response:', data);
+        setEvents(data.events || []);
+        setPagination(data.pagination || {});
       } else {
-        showError('Failed to load events');
+        const errorData = await response.json();
+        console.error('Events API Error:', errorData);
+        showError(errorData.error || 'Failed to load events');
       }
     } catch (error) {
       console.error('Error fetching events:', error);
-      showError('Failed to load events');
+      showError('Failed to load events: ' + error.message);
     } finally {
       setLoading(false);
     }

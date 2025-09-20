@@ -359,7 +359,9 @@ const completeSignup = async (req, res) => {
           select: {
             id: true,
             name: true,
-            slug: true
+            slug: true,
+            latitude: true,
+            longitude: true
           },
         },
         createdAt: true,
@@ -494,7 +496,9 @@ const refreshToken = async (req, res) => {
           select: {
             id: true,
             name: true,
-            slug: true
+            slug: true,
+            latitude: true,
+            longitude: true
           },
         },
         createdAt: true,
@@ -659,7 +663,9 @@ const verifyOTP = async (req, res) => {
           select: {
             id: true,
             name: true,
-            slug: true
+            slug: true,
+            latitude: true,
+            longitude: true
           },
         },
         createdAt: true,

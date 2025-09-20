@@ -1,25 +1,7 @@
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
 
-// Ensure profiles directory exists
-const profilesDir = path.join(__dirname, '..', 'assets', 'profiles');
-if (!fs.existsSync(profilesDir)) {
-  fs.mkdirSync(profilesDir, { recursive: true });
-}
-
-// Configure multer for profile picture uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, profilesDir);
-  },
-  filename: (req, file, cb) => {
-    // Generate unique filename with clear format: profile_timestamp.extension
-    const timestamp = Date.now();
-    const extension = path.extname(file.originalname);
-    cb(null, `profile_${timestamp}${extension}`);
-  }
-});
+// Configure multer for memory storage (for image processing)
+const storage = multer.memoryStorage();
 
 // File filter for profile pictures with enhanced validation
 const fileFilter = (req, file, cb) => {

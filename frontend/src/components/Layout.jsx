@@ -5,7 +5,9 @@ import TopNav from './TopNav';
 import SideNav from './SideNav';
 
 const Layout = ({ children }) => {
-  const { user } = useAuth();
+  // All hooks must be called at the top level, before any early returns
+  const authContext = useAuth();
+  const { user, loading } = authContext;
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -27,6 +29,18 @@ const Layout = ({ children }) => {
       setSidebarOpen(false);
     }
   }, [location.pathname]);
+
+  // Show loading state while auth context is initializing
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleToggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);

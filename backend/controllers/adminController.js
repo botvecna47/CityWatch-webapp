@@ -546,7 +546,8 @@ const getDashboardStats = async (req, res) => {
       inProgressReports,
       resolvedReports,
       totalAuthorities,
-      bannedUsers
+      bannedUsers,
+      totalCities
     ] = await Promise.all([
       prisma.user.count(),
       prisma.report.count({ where: { deleted: false } }),
@@ -554,7 +555,8 @@ const getDashboardStats = async (req, res) => {
       prisma.report.count({ where: { status: 'IN_PROGRESS', deleted: false } }),
       prisma.report.count({ where: { status: 'RESOLVED', deleted: false } }),
       prisma.user.count({ where: { role: 'authority' } }),
-      prisma.user.count({ where: { isBanned: true } })
+      prisma.user.count({ where: { isBanned: true } }),
+      prisma.city.count()
     ]);
 
     res.json({
@@ -565,7 +567,8 @@ const getDashboardStats = async (req, res) => {
         inProgressReports,
         resolvedReports,
         totalAuthorities,
-        bannedUsers
+        bannedUsers,
+        totalCities
       },
     });
   } catch (error) {

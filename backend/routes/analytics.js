@@ -28,4 +28,7 @@ router.get('/alerts', requireAdmin, analyticsController.getAlertAnalytics);
 // Authority dashboard stats (accessible by authority and admin users)
 router.get('/authority/dashboard', requireAuthority, analyticsController.getAuthorityDashboardStats);
 
+// Advanced AI/ML Analytics (Admin only)
+router.get('/admin/comprehensive', requireAdmin, analyticsController.getAdminAnalytics);
+
 module.exports = router;

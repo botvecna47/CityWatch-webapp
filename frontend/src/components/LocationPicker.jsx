@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import { useAuth } from '../contexts/AuthContext';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -23,16 +24,28 @@ const MapClickHandler = ({ onLocationSelect }) => {
 };
 
 const LocationPicker = ({ onLocationSelect, initialLocation = null, height = '300px' }) => {
+  const { user } = useAuth();
   const [selectedLocation, setSelectedLocation] = useState(initialLocation);
-  const [mapCenter, setMapCenter] = useState([40.7128, -74.0060]); // Default to NYC
+  
+  // Default to user's city coordinates, fallback to India center, then NYC
+  const getDefaultCenter = () => {
+    if (user?.city?.latitude && user?.city?.longitude) {
+      return [user.city.latitude, user.city.longitude];
+    }
+    return [20.5937, 78.9629]; // India center
+  };
+  
+  const [mapCenter, setMapCenter] = useState(getDefaultCenter());
 
-  // Set initial location if provided
+  // Set initial location if provided, or center on user's city
   useEffect(() => {
     if (initialLocation) {
       setSelectedLocation(initialLocation);
       setMapCenter([initialLocation.lat, initialLocation.lng]);
+    } else if (user?.city?.latitude && user?.city?.longitude) {
+      setMapCenter([user.city.latitude, user.city.longitude]);
     }
-  }, [initialLocation]);
+  }, [initialLocation, user?.city?.latitude, user?.city?.longitude]);
 
   const handleLocationSelect = (lat, lng) => {
     const location = { lat, lng };
@@ -46,6 +59,11 @@ const LocationPicker = ({ onLocationSelect, initialLocation = null, height = '30
         <p className="text-sm text-gray-600">
           Click anywhere on the map to select a location
         </p>
+        {user?.city?.name && (
+          <p className="text-xs text-blue-600 mt-1">
+            📍 Map centered on {user.city.name}
+          </p>
+        )}
       </div>
       
       <div 

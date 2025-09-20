@@ -883,6 +883,223 @@ Just ask me anything about your city! 🏙️`;
       ];
     }
   }
+
+  // Analyze user report content to determine priority and category
+  async analyzeUserReport({ type, reason, description, evidenceUrls = [] }) {
+    try {
+      console.log('🤖 AI: Analyzing user report...', { type, reason, description });
+
+      const combinedText = `${reason} ${description}`.toLowerCase();
+      
+      // Priority analysis based on keywords and content
+      let priority = 'MEDIUM';
+      let confidence = 0.5;
+      let reasoning = '';
+
+      // High priority indicators
+      const highPriorityKeywords = [
+        'harassment', 'threat', 'dangerous', 'illegal', 'fraud', 'scam',
+        'abuse', 'violence', 'inappropriate', 'spam', 'fake'
+      ];
+
+      // Urgent priority indicators
+      const urgentPriorityKeywords = [
+        'emergency', 'immediate', 'urgent', 'threat', 'danger', 'harm',
+        'safety', 'security', 'illegal', 'criminal'
+      ];
+
+      // Count keyword matches
+      const urgentMatches = urgentPriorityKeywords.filter(keyword => 
+        combinedText.includes(keyword)
+      ).length;
+      
+      const highMatches = highPriorityKeywords.filter(keyword => 
+        combinedText.includes(keyword)
+      ).length;
+
+      // Evidence factor
+      const evidenceFactor = evidenceUrls.length > 0 ? 0.2 : 0;
+
+      // Type-based priority adjustment
+      const typePriorityMap = {
+        'HARASSMENT': 0.8,
+        'FRAUD': 0.7,
+        'INAPPROPRIATE_CONTENT': 0.6,
+        'USER_BEHAVIOR': 0.5,
+        'SPAM': 0.4,
+        'OTHER': 0.3
+      };
+
+      const typeScore = typePriorityMap[type] || 0.3;
+
+      // Calculate final priority score
+      const priorityScore = (urgentMatches * 0.4) + (highMatches * 0.2) + typeScore + evidenceFactor;
+
+      if (priorityScore >= 0.8) {
+        priority = 'URGENT';
+        confidence = Math.min(0.95, priorityScore);
+        reasoning = 'Contains urgent keywords, high-risk type, or has evidence';
+      } else if (priorityScore >= 0.6) {
+        priority = 'HIGH';
+        confidence = Math.min(0.85, priorityScore);
+        reasoning = 'Contains high-priority keywords or serious type';
+      } else if (priorityScore >= 0.4) {
+        priority = 'MEDIUM';
+        confidence = Math.min(0.7, priorityScore);
+        reasoning = 'Standard priority based on content analysis';
+      } else {
+        priority = 'LOW';
+        confidence = Math.min(0.6, priorityScore);
+        reasoning = 'Low-priority content or insufficient indicators';
+      }
+
+      const analysis = {
+        priority,
+        confidence: Math.round(confidence * 100) / 100,
+        reasoning,
+        keywordMatches: {
+          urgent: urgentMatches,
+          high: highMatches
+        },
+        evidenceCount: evidenceUrls.length,
+        typeScore,
+        priorityScore: Math.round(priorityScore * 100) / 100
+      };
+
+      console.log('✅ AI: User report analysis complete:', analysis);
+      return analysis;
+
+    } catch (error) {
+      console.error('❌ AI: Error analyzing user report:', error);
+      return {
+        priority: 'MEDIUM',
+        confidence: 0.5,
+        reasoning: 'Default priority due to analysis error',
+        keywordMatches: { urgent: 0, high: 0 },
+        evidenceCount: evidenceUrls.length,
+        typeScore: 0.3,
+        priorityScore: 0.5
+      };
+    }
+  }
+
+  // Enhanced duplicate detection with AI severity analysis
+  async analyzeDuplicateSeverity({ title, description, existingReports }) {
+    try {
+      console.log('🤖 AI: Analyzing duplicate severity...', { title, description });
+
+      const combinedText = `${title} ${description}`.toLowerCase();
+      
+      // Severity analysis based on content and context
+      let severityScore = 5; // Default medium severity
+      let confidence = 0.5;
+      let reasoning = '';
+
+      // Critical severity indicators
+      const criticalKeywords = [
+        'emergency', 'urgent', 'immediate', 'danger', 'hazard', 'accident',
+        'injury', 'fire', 'flood', 'power', 'water', 'gas', 'leak'
+      ];
+
+      // High severity indicators
+      const highSeverityKeywords = [
+        'broken', 'damaged', 'blocked', 'overflow', 'pothole', 'traffic',
+        'noise', 'pollution', 'waste', 'garbage', 'maintenance'
+      ];
+
+      // Low severity indicators
+      const lowSeverityKeywords = [
+        'minor', 'small', 'cosmetic', 'beauty', 'cleanup', 'improvement',
+        'suggestion', 'request', 'information'
+      ];
+
+      // Count keyword matches
+      const criticalMatches = criticalKeywords.filter(keyword => 
+        combinedText.includes(keyword)
+      ).length;
+      
+      const highMatches = highSeverityKeywords.filter(keyword => 
+        combinedText.includes(keyword)
+      ).length;
+
+      const lowMatches = lowSeverityKeywords.filter(keyword => 
+        combinedText.includes(keyword)
+      ).length;
+
+      // Calculate severity score (1-10 scale)
+      let baseScore = 5;
+      
+      // Adjust based on keyword matches
+      baseScore += (criticalMatches * 2.5); // Critical keywords add 2.5 points each
+      baseScore += (highMatches * 1.5);     // High severity keywords add 1.5 points each
+      baseScore -= (lowMatches * 1.0);      // Low severity keywords subtract 1 point each
+
+      // Factor in existing reports (more reports = higher severity)
+      if (existingReports && existingReports.length > 0) {
+        const existingCount = existingReports.length;
+        baseScore += Math.min(existingCount * 0.5, 2); // Max 2 points for multiple reports
+        reasoning += `Multiple similar reports (${existingCount}) indicate recurring issue. `;
+      }
+
+      // Clamp severity score between 1 and 10
+      severityScore = Math.max(1, Math.min(10, Math.round(baseScore * 10) / 10));
+      
+      // Calculate confidence based on keyword matches and content length
+      const contentLength = combinedText.length;
+      confidence = Math.min(0.95, 
+        (criticalMatches * 0.3) + 
+        (highMatches * 0.2) + 
+        Math.min(contentLength / 200, 0.3) + 
+        0.2
+      );
+
+      // Generate reasoning
+      if (criticalMatches > 0) {
+        reasoning += `Contains ${criticalMatches} critical keywords indicating emergency situation. `;
+      }
+      if (highMatches > 0) {
+        reasoning += `Contains ${highMatches} high-severity keywords indicating significant issue. `;
+      }
+      if (lowMatches > 0) {
+        reasoning += `Contains ${lowMatches} low-severity keywords suggesting minor issue. `;
+      }
+      
+      if (reasoning === '') {
+        reasoning = 'Standard severity based on content analysis';
+      }
+
+      const analysis = {
+        severity: severityScore,
+        confidence: Math.round(confidence * 100) / 100,
+        reasoning: reasoning.trim(),
+        keywordMatches: {
+          critical: criticalMatches,
+          high: highMatches,
+          low: lowMatches
+        },
+        existingReportsCount: existingReports ? existingReports.length : 0,
+        contentLength,
+        severityLevel: severityScore >= 8 ? 'CRITICAL' : 
+                      severityScore >= 6 ? 'HIGH' : 
+                      severityScore >= 4 ? 'MEDIUM' : 'LOW'
+      };
+
+      console.log('✅ AI: Duplicate severity analysis complete:', analysis);
+      return analysis;
+
+    } catch (error) {
+      console.error('❌ AI: Error analyzing duplicate severity:', error);
+      return {
+        severity: 5,
+        confidence: 0.5,
+        reasoning: 'Default severity due to analysis error',
+        keywordMatches: { critical: 0, high: 0, low: 0 },
+        existingReportsCount: 0,
+        contentLength: 0,
+        severityLevel: 'MEDIUM'
+      };
+    }
+  }
 }
 
 module.exports = new AIService();

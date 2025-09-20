@@ -16,6 +16,7 @@ import RoleBasedDashboard from './components/RoleBasedDashboard';
 import CreateReport from './pages/CreateReport';
 import ReportDetail from './pages/ReportDetail';
 import ReportsPage from './pages/ReportsPage';
+import ReportsMap from './pages/ReportsMap';
 import Settings from './pages/Settings';
 import Notifications from './pages/Notifications';
 import AdminDashboard from './pages/AdminDashboard';
@@ -32,6 +33,7 @@ import AuthorityDashboard from './pages/AuthorityDashboard';
 import Alerts from './pages/Alerts';
 import Events from './pages/Events';
 import Announcements from './pages/Announcements';
+import AnalyticsDashboard from './components/AnalyticsDashboard';
 
 function App() {
   return (
@@ -68,6 +70,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <ReportsPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/reports/map" 
+              element={
+                <ProtectedRoute>
+                  <ReportsMap />
                 </ProtectedRoute>
               } 
             />
@@ -156,6 +166,14 @@ function App() {
               element={
                 <RoleProtectedRoute allowedRoles={['admin']}>
                   <AdminEventApprovals />
+                </RoleProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/analytics" 
+              element={
+                <RoleProtectedRoute allowedRoles={['admin']}>
+                  <AnalyticsDashboard />
                 </RoleProtectedRoute>
               } 
             />

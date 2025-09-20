@@ -90,13 +90,13 @@ const CreateReport = () => {
   const handleFileChange = (e) => {
     const selectedFiles = Array.from(e.target.files);
     
-    // Validate file types and sizes
+    // Validate file types and sizes - Only allow images for mandatory requirement
     const validFiles = selectedFiles.filter(file => {
-      const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf', 'text/plain'];
+      const validImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
       const maxSize = 5 * 1024 * 1024; // 5MB
       
-      if (!validTypes.includes(file.type)) {
-        setError(`File ${file.name} is not a supported type. Please upload images, PDFs, or text files.`);
+      if (!validImageTypes.includes(file.type)) {
+        setError(`File ${file.name} is not a supported image type. Please upload only images (JPEG, PNG, GIF, WebP).`);
         return false;
       }
       
@@ -110,7 +110,7 @@ const CreateReport = () => {
 
     if (validFiles.length > 0) {
       setError(''); // Clear any previous errors
-      setFiles(prev => [...prev, ...validFiles].slice(0, 5)); // Max 5 files
+      setFiles(prev => [...prev, ...validFiles].slice(0, 10)); // Max 10 image files
     }
   };
 
@@ -198,6 +198,13 @@ const CreateReport = () => {
 
     if (formData.description.trim().length < 10) {
       setError('Description must be at least 10 characters long');
+      setLoading(false);
+      return;
+    }
+
+    // Image validation - At least 2 images required
+    if (files.length < 2) {
+      setError('At least 2 images are required to submit a report. Please upload clear photos of the issue.');
       setLoading(false);
       return;
     }
@@ -569,41 +576,52 @@ const CreateReport = () => {
 
               <div>
                 <label htmlFor="files" className="block text-sm font-medium text-gray-700 mb-2">
-                  Attachments (Optional)
+                  Images * (Minimum 2 required)
                 </label>
                 <input
                   type="file"
                   id="files"
                   multiple
-                  accept="image/*,.pdf,.txt"
+                  accept="image/*"
                   onChange={handleFileChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
                 <p className="mt-1 text-sm text-gray-500">
-                  Upload images, PDFs, or text files (max 5 files, 5MB each)
+                  Upload clear photos of the issue (minimum 2 images, maximum 10 images, 5MB each)
+                </p>
+                <p className="mt-1 text-sm text-red-600 font-medium">
+                  {files.length < 2 ? `${2 - files.length} more image(s) required` : `${files.length}/10 images uploaded`}
                 </p>
                 
                 {files.length > 0 && (
                   <div className="mt-3">
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">Selected Files:</h4>
-                    <div className="space-y-2">
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">Selected Images ({files.length}/10):</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                       {files.map((file, index) => (
-                        <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded-md">
-                          <div className="flex items-center space-x-2">
-                            <span className="text-sm text-gray-600">{file.name}</span>
-                            <span className="text-xs text-gray-500">
-                              ({Math.round(file.size / 1024)} KB)
-                            </span>
+                        <div key={index} className="relative bg-gray-50 rounded-lg p-2 border border-gray-200">
+                          <div className="aspect-square bg-gray-100 rounded-md overflow-hidden mb-2">
+                            <img
+                              src={URL.createObjectURL(file)}
+                              alt={`Preview ${index + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div className="text-center">
+                            <p className="text-xs text-gray-600 truncate" title={file.name}>
+                              {file.name}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {Math.round(file.size / 1024)} KB
+                            </p>
                           </div>
                           <Button
                             type="button"
                             onClick={() => removeFile(index)}
                             variant="ghost"
                             size="sm"
-                            leftIcon={<X className="w-3 h-3" />}
-                            className="text-error-600 hover:text-error-800"
+                            className="absolute top-1 right-1 p-1 h-6 w-6 bg-red-500 hover:bg-red-600 text-white rounded-full"
                           >
-                            Remove
+                            <X className="w-3 h-3" />
                           </Button>
                         </div>
                       ))}
@@ -619,6 +637,7 @@ const CreateReport = () => {
                   loading={loading}
                   fullWidth
                   className="flex-1"
+                  disabled={!formData.title.trim() || !formData.description.trim() || !formData.latitude || !formData.longitude || files.length < 2}
                 >
                   {loading ? 'Creating Report...' : 'Create Report'}
                 </Button>

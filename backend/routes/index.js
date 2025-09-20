@@ -15,5 +15,6 @@ router.use('/events', require('./events'));
 router.use('/ai', require('./ai'));
 router.use('/analytics', require('./analytics'));
 router.use('/city-change', require('./cityChange'));
+router.use('/user-reports', require('./userReports'));
 
 module.exports = router;

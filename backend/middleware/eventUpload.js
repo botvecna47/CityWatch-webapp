@@ -1,24 +1,7 @@
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
 
-// Ensure the events directory exists
-const eventsDir = path.join(__dirname, '../assets/events');
-if (!fs.existsSync(eventsDir)) {
-  fs.mkdirSync(eventsDir, { recursive: true });
-}
-
-// Configure multer for event image uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, eventsDir);
-  },
-  filename: (req, file, cb) => {
-    const timestamp = Date.now();
-    const extension = path.extname(file.originalname);
-    cb(null, `event_${timestamp}${extension}`);
-  }
-});
+// Configure multer for memory storage (for image processing)
+const storage = multer.memoryStorage();
 
 // File filter for event images
 const fileFilter = (req, file, cb) => {

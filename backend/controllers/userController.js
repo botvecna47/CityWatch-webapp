@@ -1,6 +1,5 @@
 const prisma = require('../services/database');
-const fs = require('fs');
-const path = require('path');
+const imageStorage = require('../services/imageStorage');
 
 // Update user's city
 const updateUserCity = async (req, res) => {
@@ -33,7 +32,9 @@ const updateUserCity = async (req, res) => {
           select: {
             id: true,
             name: true,
-            slug: true
+            slug: true,
+            latitude: true,
+            longitude: true
           },
         }
       }
@@ -53,7 +54,9 @@ const updateUserCity = async (req, res) => {
           select: {
             id: true,
             name: true,
-            slug: true
+            slug: true,
+            latitude: true,
+            longitude: true
           },
         },
         createdAt: true,
@@ -115,7 +118,9 @@ const getCurrentUser = async (req, res) => {
           select: {
             id: true,
             name: true,
-            slug: true
+            slug: true,
+            latitude: true,
+            longitude: true
           },
         }
       }
@@ -129,7 +134,7 @@ const getCurrentUser = async (req, res) => {
 
     // Add full URL for profile picture if it exists
     if (user.profilePicture) {
-      user.profilePictureUrl = `/assets/profiles/${user.profilePicture}`;
+      user.profilePictureUrl = imageStorage.getImageUrl(user.profilePicture, 'profile');
     }
 
     res.json({ user });
@@ -163,7 +168,9 @@ const updateUserProfile = async (req, res) => {
           select: {
             id: true,
             name: true,
-            slug: true
+            slug: true,
+            latitude: true,
+            longitude: true
           },
         }
       }
@@ -216,25 +223,27 @@ const updateUserProfile = async (req, res) => {
 
     // Handle profile picture upload
     if (profilePictureFile) {
-      // Delete old profile picture if it exists
-      if (currentUser.profilePicture) {
-        const oldPicturePath = path.join(
-          __dirname,
-          'assets',
-          'profiles',
-          currentUser.profilePicture
-        );
-        try {
-          if (fs.existsSync(oldPicturePath)) {
-            fs.unlinkSync(oldPicturePath);
-          }
-        } catch (error) {
-          console.error('Error deleting old profile picture:', error);
+      try {
+        // Delete old profile picture if it exists
+        if (currentUser.profilePicture) {
+          await imageStorage.deleteImage(currentUser.profilePicture, 'profile');
         }
-      }
 
-      // Save new profile picture filename
-      updateData.profilePicture = profilePictureFile.filename;
+        // Process and save new profile picture with optimization
+        const processedImage = await imageStorage.processAndSaveImage(
+          profilePictureFile.buffer,
+          profilePictureFile.originalname,
+          'profile'
+        );
+
+        // Save new profile picture filename
+        updateData.profilePicture = processedImage.filename;
+      } catch (error) {
+        console.error('Error processing profile picture:', error);
+        return res.status(500).json({
+          error: 'Failed to process profile picture'
+        });
+      }
     }
 
     // Update user
@@ -255,7 +264,9 @@ const updateUserProfile = async (req, res) => {
           select: {
             id: true,
             name: true,
-            slug: true
+            slug: true,
+            latitude: true,
+            longitude: true
           },
         }
       }
@@ -263,7 +274,7 @@ const updateUserProfile = async (req, res) => {
 
     // Add full URL for profile picture if it exists
     if (updatedUser.profilePicture) {
-      updatedUser.profilePictureUrl = `/assets/profiles/${updatedUser.profilePicture}`;
+      updatedUser.profilePictureUrl = imageStorage.getImageUrl(updatedUser.profilePicture, 'profile');
     }
 
     // Create audit log entry for significant changes

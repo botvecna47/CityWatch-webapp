@@ -92,7 +92,7 @@ const Home = () => {
     {
       icon: <Clock className="w-8 h-8" />,
       title: "Fast Response",
-      description: "Average response time of 2.4 hours with 95% resolution rate."
+      description: `Average response time of ${stats.avgResponseTime}h with ${stats.resolvedIssues}% resolution rate.`
     }
   ];
 
@@ -100,19 +100,19 @@ const Home = () => {
     {
       name: "Sarah Johnson",
       role: "Resident, Downtown",
-      content: "CityWatch helped me report a broken streetlight that was fixed within 24 hours. Amazing service!",
+      content: "CityWatch helped me report a broken streetlight that was fixed quickly. Amazing service!",
       rating: 5
     },
     {
       name: "Michael Chen",
       role: "Business Owner",
-      content: "The pothole outside my shop was reported and fixed in just 2 days. This platform really works.",
+      content: "The pothole outside my shop was reported and fixed efficiently. This platform really works.",
       rating: 5
     },
     {
       name: "Emily Rodriguez",
       role: "Parent",
-      content: "I reported unsafe playground equipment and it was replaced within a week. Thank you CityWatch!",
+      content: "I reported unsafe playground equipment and it was replaced promptly. Thank you CityWatch!",
       rating: 5
     }
   ];

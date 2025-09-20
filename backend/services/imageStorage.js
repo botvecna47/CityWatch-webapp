@@ -101,8 +101,9 @@ class ImageStorageService {
 
   // Generate public URL for image
   getImageUrl(filename, type = 'report') {
-    const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
-    return `${baseUrl}/assets/${type}s/${filename}`;
+    // Return just the path, not the full URL
+    // The frontend will add the base URL
+    return `/assets/${type}s/${filename}`;
   }
 
   // Delete image file

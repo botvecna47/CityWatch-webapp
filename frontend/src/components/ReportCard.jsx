@@ -195,13 +195,38 @@ const ReportCard = ({ report, onDelete, onVote }) => {
             {truncateText(report.description)}
           </p>
           
-          {report.attachments?.[0]?.url && (
+          {/* Images Gallery */}
+          {report.attachments && report.attachments.length > 0 && (
             <div className="mb-3">
-              <LazyImage
-                src={report.attachments[0].url}
-                alt={report.title}
-                className="w-full h-48 object-cover rounded-lg"
-              />
+              {report.attachments.length === 1 ? (
+                // Single image
+                <div className="w-full h-48 rounded-lg overflow-hidden">
+                  <LazyImage
+                    src={`http://localhost:5000${report.attachments[0].url}`}
+                    alt={report.title}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ) : (
+                // Multiple images - show first image with count
+                <div className="relative w-full h-48 rounded-lg overflow-hidden group cursor-pointer">
+                  <LazyImage
+                    src={`http://localhost:5000${report.attachments[0].url}`}
+                    alt={report.title}
+                    className="w-full h-full object-cover"
+                  />
+                  {/* Image count overlay */}
+                  <div className="absolute top-2 right-2 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded-full">
+                    {report.attachments.length} images
+                  </div>
+                  {/* Hover overlay */}
+                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center">
+                    <span className="text-white opacity-0 group-hover:opacity-100 text-sm font-medium transition-opacity duration-200">
+                      View All Images
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
